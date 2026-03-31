@@ -1,21 +1,28 @@
 import { useEffect, useState } from "react";
-import { useLocation } from "wouter";
-import { Link } from "wouter";
-import { 
-  ArrowLeft, Flame, Utensils, Dumbbell, Info, 
-  ChevronRight, Calendar, AlertTriangle, ChevronDown, CheckCircle2
+import { useLocation, Link } from "wouter";
+import {
+  ArrowLeft, Flame, Utensils, Dumbbell, Zap,
+  TrendingUp, AlertTriangle, CheckCircle2, ChevronDown, RotateCcw
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { GeneratedPlan } from "@/lib/planGenerator";
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
+import { GeneratedPlan } from "@/lib/planGenerator";
+
+function MacroBadge({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center bg-muted/40 border border-border rounded-xl p-4 text-center">
+      <span className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">{label}</span>
+      <span className={`text-2xl font-black ${color}`}>{value}<span className="text-base font-medium ml-0.5">{unit}</span></span>
+    </div>
+  );
+}
 
 export default function PlanPage() {
-  const [location, setLocation] = useLocation();
+  const [, setLocation] = useLocation();
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
 
   useEffect(() => {
@@ -25,141 +32,150 @@ export default function PlanPage() {
     } else {
       try {
         setPlan(JSON.parse(data));
-      } catch (e) {
+      } catch {
         setLocation("/formulario");
       }
     }
   }, [setLocation]);
 
-  if (!plan) return (
-    <div className="min-h-screen flex items-center justify-center bg-background">
-      <div className="animate-pulse flex flex-col items-center">
-        <Dumbbell className="w-12 h-12 text-primary animate-bounce mb-4" />
-        <p className="text-xl font-medium text-muted-foreground">Gerando seu plano...</p>
+  if (!plan) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
+        <div className="relative">
+          <div className="w-16 h-16 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center">
+            <Zap className="w-8 h-8 text-primary animate-pulse" fill="currentColor" />
+          </div>
+          <div className="absolute -inset-2 bg-primary/10 rounded-3xl blur-xl animate-pulse" />
+        </div>
+        <p className="text-muted-foreground text-sm">Carregando seu plano...</p>
       </div>
-    </div>
-  );
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-background pb-20">
-      {/* Header */}
-      <header className="bg-primary text-primary-foreground pt-12 pb-24 px-6 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-white via-transparent to-transparent"></div>
-        <div className="container max-w-5xl mx-auto relative z-10">
-          <Link href="/formulario" className="inline-flex items-center text-primary-foreground/80 hover:text-white transition-colors mb-8 text-sm font-medium">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Refazer Plano
-          </Link>
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4">O Seu Plano de Ação</h1>
-          <p className="text-primary-foreground/90 text-lg md:text-xl max-w-2xl">
-            Desenhado para {plan.userData.goal.toLowerCase()}, com {plan.userData.frequency} de treino para nível {plan.userData.level.toLowerCase()}.
-          </p>
-        </div>
-      </header>
+    <div className="min-h-screen bg-background text-foreground pb-24">
 
-      <main className="container max-w-5xl mx-auto px-4 sm:px-6 -mt-12 space-y-8">
-        
-        {/* Strategy Card */}
-        <section className="bg-card rounded-2xl p-6 md:p-8 shadow-xl shadow-black/5 border border-border">
+      {/* Header */}
+      <div className="border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40 px-6 py-4">
+        <div className="max-w-5xl mx-auto flex items-center justify-between">
+          <Link href="/formulario">
+            <button data-testid="button-redo-plan-top" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
+              <ArrowLeft className="w-4 h-4" />
+              Refazer
+            </button>
+          </Link>
+          <div className="flex items-center gap-2">
+            <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
+              <Zap className="w-3 h-3 text-primary-foreground" fill="currentColor" />
+            </div>
+            <span className="font-bold text-sm">Elevate</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Hero banner */}
+      <div className="relative overflow-hidden border-b border-border">
+        <div className="absolute inset-0 grid-bg opacity-40" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-transparent pointer-events-none" />
+        <div className="relative max-w-5xl mx-auto px-6 py-16 md:py-20">
+          <p className="text-primary text-xs font-bold uppercase tracking-widest mb-4">Seu plano personalizado</p>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-4">
+            Seu Plano de Ação
+          </h1>
+          <p className="text-muted-foreground text-lg max-w-2xl">
+            Desenhado para <strong className="text-foreground">{plan.userData.goal.toLowerCase()}</strong> — {plan.userData.frequency}/semana, nível <strong className="text-foreground">{plan.userData.level.toLowerCase()}</strong>.
+          </p>
+          {/* Macros summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-10">
+            <MacroBadge label="Calorias" value={plan.nutrition.targetCalories} unit="kcal" color="text-orange-400" />
+            <MacroBadge label="Proteínas" value={plan.nutrition.macros.protein} unit="g" color="text-blue-400" />
+            <MacroBadge label="Carboidratos" value={plan.nutrition.macros.carbs} unit="g" color="text-primary" />
+            <MacroBadge label="Gorduras" value={plan.nutrition.macros.fat} unit="g" color="text-yellow-400" />
+          </div>
+        </div>
+      </div>
+
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 pt-10 space-y-8">
+
+        {/* Strategy */}
+        <section className="card-premium rounded-2xl p-8">
           <div className="flex items-start gap-4">
-            <div className="w-12 h-12 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-              <Info className="w-6 h-6 text-accent" />
+            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+              <Zap className="w-5 h-5 text-primary" fill="currentColor" />
             </div>
             <div>
-              <h2 className="text-2xl font-bold mb-2">Estratégia Geral</h2>
-              <p className="text-muted-foreground leading-relaxed text-lg">{plan.strategy}</p>
+              <h2 className="text-xl font-bold mb-3">Estratégia Geral</h2>
+              <p className="text-muted-foreground leading-relaxed">{plan.strategy}</p>
             </div>
           </div>
         </section>
 
-        {/* Nutrition Overview */}
-        <section className="space-y-6">
+        {/* Nutrition */}
+        <section className="space-y-5">
           <div className="flex items-center gap-3">
-            <Utensils className="w-8 h-8 text-primary" />
-            <h2 className="text-3xl font-bold">Plano Alimentar Diário</h2>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-center items-center text-center">
-              <Flame className="w-8 h-8 text-orange-500 mb-2" />
-              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider">Calorias Alvo</span>
-              <span className="text-3xl font-extrabold">{plan.nutrition.targetCalories} <span className="text-lg text-muted-foreground font-medium">kcal</span></span>
-            </div>
-            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-center items-center text-center">
-              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Proteínas</span>
-              <span className="text-3xl font-extrabold text-blue-600">{plan.nutrition.macros.protein}g</span>
-              <span className="text-xs text-muted-foreground mt-1">4 kcal/g</span>
-            </div>
-            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-center items-center text-center">
-              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Carboidratos</span>
-              <span className="text-3xl font-extrabold text-green-600">{plan.nutrition.macros.carbs}g</span>
-              <span className="text-xs text-muted-foreground mt-1">4 kcal/g</span>
-            </div>
-            <div className="bg-card p-6 rounded-2xl border border-border shadow-sm flex flex-col justify-center items-center text-center">
-              <span className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-2">Gorduras</span>
-              <span className="text-3xl font-extrabold text-yellow-500">{plan.nutrition.macros.fat}g</span>
-              <span className="text-xs text-muted-foreground mt-1">9 kcal/g</span>
-            </div>
+            <Utensils className="w-5 h-5 text-primary" />
+            <h2 className="text-2xl font-black tracking-tight">Plano Alimentar Diário</h2>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3">
             {plan.nutrition.meals.map((meal, i) => (
-              <div key={i} className="bg-card border border-border rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                <div className="bg-muted/30 px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <h3 className="text-xl font-bold">{meal.name}</h3>
-                  <div className="flex flex-wrap gap-2 text-sm font-medium">
-                    <span className="bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300 px-2 py-1 rounded-md">{meal.calories} kcal</span>
-                    <span className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 px-2 py-1 rounded-md">{meal.protein}g P</span>
-                    <span className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 px-2 py-1 rounded-md">{meal.carbs}g C</span>
-                    <span className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300 px-2 py-1 rounded-md">{meal.fat}g G</span>
+              <div key={i} data-testid={`card-meal-${i}`} className="card-premium rounded-2xl overflow-hidden">
+                <div className="px-6 py-4 border-b border-border flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <h3 className="font-bold text-base">{meal.name}</h3>
+                  <div className="flex flex-wrap gap-2">
+                    <span className="text-xs font-bold bg-orange-500/10 text-orange-400 border border-orange-500/20 px-2.5 py-1 rounded-lg">{meal.calories} kcal</span>
+                    <span className="text-xs font-bold bg-blue-500/10 text-blue-400 border border-blue-500/20 px-2.5 py-1 rounded-lg">{meal.protein}g Prot</span>
+                    <span className="text-xs font-bold bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-lg">{meal.carbs}g Carb</span>
+                    <span className="text-xs font-bold bg-yellow-500/10 text-yellow-400 border border-yellow-500/20 px-2.5 py-1 rounded-lg">{meal.fat}g Gord</span>
                   </div>
                 </div>
-                <div className="p-6">
-                  <ul className="space-y-3">
-                    {meal.items.map((item, j) => (
-                      <li key={j} className="flex items-start gap-3">
-                        <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                        <span className="text-lg">{item}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
+                <ul className="px-6 py-5 space-y-2.5">
+                  {meal.items.map((item, j) => (
+                    <li key={j} className="flex items-start gap-3 text-sm">
+                      <CheckCircle2 className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                      <span className="text-foreground/85">{item}</span>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </div>
         </section>
 
-        {/* Workout Plan */}
-        <section className="space-y-6 pt-8">
+        {/* Workout */}
+        <section className="space-y-5">
           <div className="flex items-center gap-3">
-            <Dumbbell className="w-8 h-8 text-primary" />
-            <h2 className="text-3xl font-bold">Treino Semanal</h2>
+            <Dumbbell className="w-5 h-5 text-primary" />
+            <h2 className="text-2xl font-black tracking-tight">Treino Semanal</h2>
           </div>
-          
-          <div className="bg-card border border-border rounded-2xl p-2 shadow-sm">
-            <Accordion type="multiple" className="w-full space-y-2">
+
+          <div className="card-premium rounded-2xl p-2">
+            <Accordion type="multiple" className="w-full space-y-1">
               {plan.workout.map((day, i) => (
-                <AccordionItem key={i} value={`day-${i}`} className="border-none bg-muted/20 rounded-xl px-2">
-                  <AccordionTrigger className="hover:no-underline px-4 py-5">
-                    <div className="flex items-center text-left gap-4">
-                      <div className="w-12 h-12 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                        <Calendar className="w-5 h-5 text-primary" />
+                <AccordionItem key={i} value={`day-${i}`} className="border-none rounded-xl overflow-hidden">
+                  <AccordionTrigger
+                    data-testid={`accordion-day-${i}`}
+                    className="hover:no-underline px-5 py-5 hover:bg-muted/30 rounded-xl transition-colors duration-200 [&[data-state=open]]:bg-muted/20"
+                  >
+                    <div className="flex items-center gap-4 text-left">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                        <span className="text-primary font-black text-xs">{i + 1}</span>
                       </div>
                       <div>
-                        <div className="text-sm font-semibold text-muted-foreground uppercase tracking-wider">{day.day}</div>
-                        <div className="text-xl font-bold">{day.focus}</div>
+                        <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-0.5">{day.day}</div>
+                        <div className="text-base font-bold">{day.focus}</div>
                       </div>
                     </div>
                   </AccordionTrigger>
-                  <AccordionContent className="px-4 pb-6 pt-2">
-                    <div className="space-y-3">
+                  <AccordionContent className="px-5 pb-5 pt-1">
+                    <div className="space-y-2.5">
                       {day.exercises.map((ex, j) => (
-                        <div key={j} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-background rounded-xl border border-border gap-4">
-                          <span className="font-semibold text-lg">{ex.name}</span>
-                          <div className="flex flex-wrap gap-3 text-sm">
-                            <div className="bg-muted px-3 py-1.5 rounded-md font-medium"><span className="text-muted-foreground mr-1">Séries:</span>{ex.sets}</div>
-                            <div className="bg-muted px-3 py-1.5 rounded-md font-medium"><span className="text-muted-foreground mr-1">Reps:</span>{ex.reps}</div>
-                            <div className="bg-muted px-3 py-1.5 rounded-md font-medium"><span className="text-muted-foreground mr-1">Descanso:</span>{ex.rest}</div>
+                        <div key={j} data-testid={`exercise-${i}-${j}`} className="flex flex-col sm:flex-row sm:items-center justify-between bg-muted/30 border border-border rounded-xl px-4 py-3 gap-3">
+                          <span className="font-semibold text-sm">{ex.name}</span>
+                          <div className="flex gap-2 flex-wrap">
+                            <span className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-medium"><span className="text-muted-foreground mr-1">Séries</span>{ex.sets}</span>
+                            <span className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-medium"><span className="text-muted-foreground mr-1">Reps</span>{ex.reps}</span>
+                            <span className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-medium"><span className="text-muted-foreground mr-1">Descanso</span>{ex.rest}</span>
                           </div>
                         </div>
                       ))}
@@ -171,38 +187,38 @@ export default function PlanPage() {
           </div>
         </section>
 
-        <div className="grid md:grid-cols-2 gap-8 pt-8">
-          {/* Tips */}
-          <section className="bg-card border border-border rounded-2xl p-8 shadow-sm">
-            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <Flame className="w-6 h-6 text-accent" />
-              Dicas Práticas
-            </h3>
+        {/* Tips + Timeline */}
+        <div className="grid md:grid-cols-2 gap-6">
+          <section className="card-premium rounded-2xl p-8 space-y-5">
+            <div className="flex items-center gap-3">
+              <Flame className="w-5 h-5 text-orange-400" />
+              <h3 className="text-xl font-black tracking-tight">Dicas Práticas</h3>
+            </div>
             <ul className="space-y-4">
               {plan.tips.map((tip, i) => (
-                <li key={i} className="flex gap-3 text-muted-foreground">
-                  <div className="w-2 h-2 rounded-full bg-primary mt-2 shrink-0"></div>
-                  <span className="leading-relaxed">{tip}</span>
+                <li key={i} data-testid={`tip-${i}`} className="flex gap-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-primary mt-2 shrink-0" />
+                  <span className="text-sm text-muted-foreground leading-relaxed">{tip}</span>
                 </li>
               ))}
             </ul>
           </section>
 
-          {/* Timeline */}
-          <section className="bg-card border border-border rounded-2xl p-8 shadow-sm">
-            <h3 className="text-2xl font-bold mb-6 flex items-center gap-2">
-              <Activity className="w-6 h-6 text-primary" />
-              Evolução Esperada
-            </h3>
-            <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
+          <section className="card-premium rounded-2xl p-8 space-y-5">
+            <div className="flex items-center gap-3">
+              <TrendingUp className="w-5 h-5 text-primary" />
+              <h3 className="text-xl font-black tracking-tight">Evolução Esperada</h3>
+            </div>
+            <div className="space-y-5 relative">
+              <div className="absolute left-4 top-0 bottom-0 w-px bg-border" />
               {plan.timeline.map((item, i) => (
-                <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-background bg-primary text-primary-foreground shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 font-bold text-sm z-10">
+                <div key={i} data-testid={`timeline-${i}`} className="flex gap-5 relative">
+                  <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground font-black text-xs flex items-center justify-center shrink-0 z-10 border-2 border-background">
                     S{item.week}
                   </div>
-                  <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl bg-muted/30 border border-border">
-                    <h4 className="font-bold text-primary mb-1">Semana {item.week}</h4>
-                    <p className="text-sm text-muted-foreground">{item.expectation}</p>
+                  <div className="bg-muted/30 border border-border rounded-xl p-4 flex-1">
+                    <div className="text-primary font-bold text-xs mb-1 uppercase tracking-wider">Semana {item.week}</div>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{item.expectation}</p>
                   </div>
                 </div>
               ))}
@@ -211,17 +227,24 @@ export default function PlanPage() {
         </div>
 
         {/* Disclaimer */}
-        <div className="bg-muted/50 rounded-xl p-4 flex items-start gap-3 mt-12 text-sm text-muted-foreground">
-          <AlertTriangle className="w-5 h-5 text-yellow-600 shrink-0" />
+        <div className="flex items-start gap-3 bg-yellow-500/5 border border-yellow-500/15 rounded-xl p-5 text-sm text-muted-foreground">
+          <AlertTriangle className="w-5 h-5 text-yellow-500/70 shrink-0 mt-0.5" />
           <p>
-            Este plano é gerado automaticamente com base em fórmulas matemáticas padrão (Mifflin-St Jeor) e princípios gerais de nutrição esportiva. Ele <strong>não substitui a orientação de nutricionistas e educadores físicos profissionais</strong>. Consulte um médico antes de iniciar qualquer programa de exercícios ou dieta.
+            Este plano é gerado automaticamente com base em fórmulas matemáticas padrão (Mifflin-St Jeor) e princípios gerais de nutrição esportiva.{" "}
+            <strong className="text-foreground/80">Não substitui a orientação de nutricionistas e educadores físicos profissionais.</strong> Consulte um médico antes de iniciar qualquer programa.
           </p>
         </div>
 
-        <div className="flex justify-center pt-8 pb-12">
-          <Button variant="outline" size="lg" onClick={() => setLocation("/formulario")} className="h-14 px-8 text-lg font-bold">
+        {/* Redo button */}
+        <div className="flex justify-center pt-4 pb-12">
+          <button
+            data-testid="button-redo-plan-bottom"
+            onClick={() => setLocation("/formulario")}
+            className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground border border-border hover:border-foreground/20 px-6 py-3 rounded-xl transition-all duration-200"
+          >
+            <RotateCcw className="w-4 h-4" />
             Refazer meu plano
-          </Button>
+          </button>
         </div>
       </main>
     </div>
