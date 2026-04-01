@@ -132,7 +132,20 @@ export default function Coach({ plan, onClose }: CoachProps) {
       });
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        let errorMsg = "Ocorreu um erro. Tente novamente.";
+        try {
+          const body = await response.json();
+          if (body?.error) errorMsg = body.error;
+        } catch {}
+        setMessages((prev) => {
+          const next = [...prev];
+          const last = next[next.length - 1];
+          if (last.role === "assistant" && last.content === "") {
+            next[next.length - 1] = { ...last, content: errorMsg };
+          }
+          return next;
+        });
+        return;
       }
 
       const reader = response.body?.getReader();

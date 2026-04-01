@@ -3,7 +3,44 @@ import { Router, type IRouter } from "express";
 const router: IRouter = Router();
 
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
-const OPENROUTER_MODEL = "google/gemini-2.0-flash-exp:free";
+
+const FREE_MODELS = [
+  "google/gemma-3-27b-it:free",
+  "meta-llama/llama-3.3-70b-instruct:free",
+  "deepseek/deepseek-r1:free",
+];
+
+async function callOpenRouter(
+  apiKey: string,
+  chatMessages: { role: string; content: string }[],
+): Promise<Response> {
+  for (let attempt = 0; attempt < FREE_MODELS.length; attempt++) {
+    const model = FREE_MODELS[attempt];
+    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+        "HTTP-Referer": process.env.APP_URL || "https://elevate-app.vercel.app",
+        "X-Title": "Elevate Coach",
+      },
+      body: JSON.stringify({
+        model,
+        messages: chatMessages,
+        stream: true,
+        max_tokens: 1024,
+      }),
+    });
+
+    if (response.status === 429 || response.status === 503) {
+      continue;
+    }
+
+    return response;
+  }
+
+  throw new Error("All models rate-limited. Please try again in a moment.");
+}
 
 router.post("/chat", async (req, res) => {
   try {
@@ -24,10 +61,6 @@ router.post("/chat", async (req, res) => {
       return;
     }
 
-    res.setHeader("Content-Type", "text/event-stream");
-    res.setHeader("Cache-Control", "no-cache");
-    res.setHeader("Connection", "keep-alive");
-
     const chatMessages = [
       {
         role: "system",
@@ -38,29 +71,27 @@ router.post("/chat", async (req, res) => {
       ...messages,
     ];
 
-    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": process.env.APP_URL || "https://elevate-app.vercel.app",
-        "X-Title": "Elevate Coach",
-      },
-      body: JSON.stringify({
-        model: OPENROUTER_MODEL,
-        messages: chatMessages,
-        stream: true,
-        max_tokens: 1024,
-      }),
-    });
+    let response: Response;
+    try {
+      response = await callOpenRouter(apiKey, chatMessages);
+    } catch (err) {
+      req.log.warn({ err }, "All models rate-limited");
+      res.status(503).json({
+        error: "Coach temporariamente sobrecarregado. Aguarde alguns segundos e tente novamente.",
+      });
+      return;
+    }
 
     if (!response.ok) {
       const errorText = await response.text();
       req.log.error({ status: response.status, errorText }, "OpenRouter API error");
-      res.write(`data: ${JSON.stringify({ error: "Erro ao conectar com a IA. Tente novamente." })}\n\n`);
-      res.end();
+      res.status(502).json({ error: "Erro ao conectar com a IA. Tente novamente." });
       return;
     }
+
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
 
     const reader = response.body?.getReader();
     const decoder = new TextDecoder();
