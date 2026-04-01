@@ -11,6 +11,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { GeneratedPlan } from "@/lib/planGenerator";
+import Coach, { CoachButton } from "@/components/Coach";
 
 function MacroBadge({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
   return (
@@ -24,6 +25,7 @@ function MacroBadge({ label, value, unit, color }: { label: string; value: numbe
 export default function PlanPage() {
   const [, setLocation] = useLocation();
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
+  const [showCoach, setShowCoach] = useState(false);
 
   useEffect(() => {
     const data = localStorage.getItem("nutri-treino-plan");
@@ -54,6 +56,8 @@ export default function PlanPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
+      {showCoach && <Coach plan={plan} onClose={() => setShowCoach(false)} />}
+      <CoachButton onClick={() => setShowCoach(true)} />
 
       {/* Header */}
       <div className="border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40 px-6 py-4">
