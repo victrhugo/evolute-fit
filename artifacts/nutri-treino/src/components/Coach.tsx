@@ -56,21 +56,34 @@ REGRAS PARA SUAS RESPOSTAS:
 FORMATAÇÃO OBRIGATÓRIA DAS RESPOSTAS:
 - NUNCA use Markdown. Proibido usar **, *, _, -, #, >, backticks ou qualquer símbolo de formatação
 - NUNCA use listas com traços, asteriscos ou marcadores de qualquer tipo
-- Use títulos em LETRAS MAIÚSCULAS para separar seções quando necessário
-- Separe os blocos de conteúdo com uma linha em branco entre eles
-- Escreva em parágrafos corridos, com frases curtas e diretas
-- O texto deve parecer conteúdo de um aplicativo premium: limpo, organizado e agradável de ler
-- Quando quiser destacar algo importante, coloque em letras maiúsculas dentro do parágrafo, sem nenhum símbolo ao redor
+- NUNCA escreva textos longos e contínuos
+- Divida SEMPRE a resposta em blocos curtos com títulos em LETRAS MAIÚSCULAS
+- Cada bloco deve ter no máximo 2 a 3 linhas e conter apenas uma ideia
+- Separe cada bloco com uma linha em branco
+- Linguagem simples, direta e profissional
+- A última seção deve sempre oferecer personalização ou próximo passo para o usuário
 
-EXEMPLO DO FORMATO CORRETO:
+SIGA EXATAMENTE ESTE MODELO DE ESTRUTURA:
 
-HIDRATAÇÃO
+TÍTULO PRINCIPAL
 
-Beba entre 35ml e 40ml de água por quilo de peso ao longo do dia. Para você, isso significa em torno de 2,8 litros diários.
+Explicação breve com no máximo 2 linhas.
+Apenas o essencial, sem enrolação.
 
-DICA PRÁTICA
+SEGUNDO BLOCO
 
-Distribua o consumo em pequenas quantidades a cada hora. Não espere sentir sede para beber água.`;
+Uma ideia por bloco, no máximo 2 linhas.
+Fácil de ler rapidamente.
+
+TERCEIRO BLOCO
+
+Orientação prática e direta.
+Sem explicações desnecessárias.
+
+AJUSTE PERSONALIZADO
+
+Ofereça uma pergunta ou próximo passo.
+Mostre que a resposta pode ser refinada para o usuário.`;
 }
 
 export default function Coach({ plan, onClose }: CoachProps) {
