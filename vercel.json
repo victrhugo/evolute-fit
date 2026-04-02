@@ -1,0 +1,12 @@
+{
+  "buildCommand": "pnpm --filter @workspace/nutri-treino run build",
+  "outputDirectory": "artifacts/nutri-treino/dist/public",
+  "installCommand": "pnpm install --frozen-lockfile",
+  "functions": {
+    "api/chat.ts": { "maxDuration": 30 },
+    "api/healthz.ts": { "maxDuration": 5 }
+  },
+  "rewrites": [
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
+  ]
+}
