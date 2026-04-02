@@ -1,10 +1,14 @@
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
-const FREE_MODELS = [
-  "qwen/qwen3.6-plus:free",
-  "openai/gpt-oss-120b:free",
-  "nvidia/nemotron-3-super-120b-a12b:free",
-  "arcee-ai/trinity-mini:free",
+interface ModelConfig {
+  id: string;
+  disableThinking?: boolean;
+}
+
+const FREE_MODELS: ModelConfig[] = [
+  { id: "stepfun/step-3.5-flash:free" },
+  { id: "arcee-ai/trinity-mini:free" },
+  { id: "qwen/qwen3.6-plus:free", disableThinking: true },
 ];
 
 export const config = {
@@ -14,31 +18,73 @@ export const config = {
 async function callOpenRouter(
   apiKey: string,
   chatMessages: { role: string; content: string }[],
+  modelConfig: ModelConfig,
 ): Promise<Response> {
-  for (let attempt = 0; attempt < FREE_MODELS.length; attempt++) {
-    const model = FREE_MODELS[attempt];
-    const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": process.env.APP_URL || "https://elevate-app.vercel.app",
-        "X-Title": "Elevate Coach",
-      },
-      body: JSON.stringify({
-        model,
-        messages: chatMessages,
-        stream: true,
-        max_tokens: 1024,
-      }),
-    });
+  const body: Record<string, unknown> = {
+    model: modelConfig.id,
+    messages: chatMessages,
+    stream: true,
+    max_tokens: 1200,
+  };
 
-    if (response.ok) {
-      return response;
+  if (modelConfig.disableThinking) {
+    body["enable_thinking"] = false;
+  }
+
+  return fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+      "HTTP-Referer": process.env.APP_URL || "https://elevate-app.vercel.app",
+      "X-Title": "Elevate Coach",
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+async function tryModels(
+  apiKey: string,
+  chatMessages: { role: string; content: string }[],
+): Promise<Response> {
+  let lastStatus = 0;
+  let lastError = "";
+
+  for (const modelConfig of FREE_MODELS) {
+    const response = await callOpenRouter(apiKey, chatMessages, modelConfig);
+    if (response.ok) return response;
+    lastStatus = response.status;
+    lastError = await response.text().catch(() => "unknown error");
+  }
+
+  throw new Error(`All models failed. Last status: ${lastStatus}. ${lastError}`);
+}
+
+function stripThinkingContent(chunk: string, inThinkBlock: { value: boolean }): string {
+  let output = "";
+  let i = 0;
+
+  while (i < chunk.length) {
+    if (!inThinkBlock.value) {
+      const start = chunk.indexOf("<think>", i);
+      if (start === -1) {
+        output += chunk.slice(i);
+        break;
+      }
+      output += chunk.slice(i, start);
+      inThinkBlock.value = true;
+      i = start + 7;
+    } else {
+      const end = chunk.indexOf("</think>", i);
+      if (end === -1) {
+        break;
+      }
+      inThinkBlock.value = false;
+      i = end + 8;
     }
   }
 
-  throw new Error("All models failed. Please try again.");
+  return output;
 }
 
 export default async function handler(req: any, res: any) {
@@ -81,11 +127,10 @@ export default async function handler(req: any, res: any) {
 
   let openRouterResponse: Response;
   try {
-    openRouterResponse = await callOpenRouter(apiKey, chatMessages);
+    openRouterResponse = await tryModels(apiKey, chatMessages);
   } catch {
     res.status(503).json({
-      error:
-        "Coach temporariamente sobrecarregado. Aguarde alguns segundos e tente novamente.",
+      error: "Coach temporariamente sobrecarregado. Aguarde alguns segundos e tente novamente.",
     });
     return;
   }
@@ -104,6 +149,7 @@ export default async function handler(req: any, res: any) {
   }
 
   let buffer = "";
+  const inThinkBlock = { value: false };
 
   while (true) {
     const { done, value } = await reader.read();
@@ -120,7 +166,13 @@ export default async function handler(req: any, res: any) {
 
       try {
         const parsed = JSON.parse(raw);
-        const content = parsed.choices?.[0]?.delta?.content;
+
+        if (parsed.choices?.[0]?.delta?.reasoning) continue;
+
+        const rawContent: string | undefined = parsed.choices?.[0]?.delta?.content;
+        if (!rawContent) continue;
+
+        const content = stripThinkingContent(rawContent, inThinkBlock);
         if (content) {
           res.write(`data: ${JSON.stringify({ content })}\n\n`);
         }

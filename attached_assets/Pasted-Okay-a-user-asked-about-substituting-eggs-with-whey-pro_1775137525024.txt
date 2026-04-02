@@ -1,0 +1,63 @@
+Okay, a user asked about substituting eggs with whey protein (40g protein). Let me check the current meal plan.
+
+Looking at the breakfast: "Ovos mexidos (2-3 unidades)" with 28g protein total for the meal. The user says they don't eat eggs and wants to use whey with 40g protein instead.
+
+First, I need to address the protein substitution. The current breakfast has 28g protein from eggs. If they replace eggs with 40g whey protein, that's actually more protein than the original. But I should check if this fits within their daily macros.
+
+Their daily protein goal is 113g. Current breakfast: 28g P. If they use 40g whey, that would increase protein by 12g, making total daily protein around 125g if nothing else changes. But wait, the whey might replace only the egg portion, not the whole meal.
+
+The breakfast currently has: Ovos mexidos (2-3 unidades), Pão francês ou tapioca (1 unidade), Café com leite. Total 697kcal | 28g P | 103g C | 19g G.
+
+If they remove the eggs (which provide most of the 28g protein) and add whey, I need to estimate how much protein the eggs contribute. Typically, 2-3 large eggs have about 12-18g protein. Let's say 15g from eggs. Then the rest of the meal (bread, coffee with milk) might have around 13g protein.
+
+But the user is proposing to replace eggs with whey protein. So if they remove eggs (~15g P) and add 40g whey protein, net change would be +25g protein. That would make breakfast protein around 28 -15 +40 = 53g? Wait, better to think: original breakfast P=28g. If eggs contribute X g, then replacing eggs with whey would give (28 - X) + 40g protein.
+
+But since I don't have exact breakdown, I should give general guidance.
+
+Important: Whey protein is a supplement, and the plan says "NUNCA recomende medicamentos, hormônios ou suplementos avançados" but whey is a common supplement. However, the rules say "suplementos avançados" - whey is basic, so probably okay but need to be cautious.
+
+The user's current plan doesn't include whey, so suggesting it as a substitute is acceptable as a food alternative.
+
+But I should check if 40g whey is too much. Typical whey scoop is 20-25g protein, so 40g would be about 1.5-2 scoops. That's a lot for one meal.
+
+Daily protein goal is 113g. If breakfast goes from 28g to, say, 40g+ (if whey replaces eggs entirely), that's a significant increase. But let's calculate:
+
+Original breakfast: 28g P If they replace eggs (assuming eggs provide ~20g P of the 28g) with 40g whey, then new breakfast P ≈ 28 -20 +40 = 48g P Then total daily protein would be original 113 -28 +48 = 133g, which is above target.
+
+But actually, the user might be considering whey as a direct replacement for the egg portion, not necessarily keeping the same volume.
+
+Better approach: Advise that whey can be used but adjust quantity to match protein needs.
+
+Also, need to consider that whey is liquid and might not be as satiating, and they lose other nutrients from eggs.
+
+But since user doesn't eat eggs, substitution is necessary.
+
+Now, for the response format: Must be in Portuguese, no markdown, short blocks with uppercase titles, 2-3 lines max per block.
+
+Structure: TÍTULO PRINCIPAL Explicação breve
+
+SEGUNDO BLOCO
+
+Ideia
+
+TERCEIRO BLOCO
+
+Orientação prática
+
+AJUSTE PERSONALIZADO
+
+Pergunta ou próximo passo
+
+And must end with personalization.
+
+Also, no lists, no markdown symbols.
+
+Let me draft:
+
+TÍTULO PRINCIPAL
+
+Sim pode substituir ovo por whey mas ajuste a quantidade 40g de whey tem muita proteína para uma refeição Ajuste para manter seu total diário de 113g de proteína
+
+SEGUNDO BLOCO
+
+Seu café da manhã atual tem 28g proteína Substituindoov
