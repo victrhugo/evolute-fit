@@ -5,15 +5,19 @@ const router: IRouter = Router();
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 const FREE_MODELS = [
-  "google/gemma-3-27b-it:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "deepseek/deepseek-r1:free",
+  "qwen/qwen3.6-plus:free",
+  "openai/gpt-oss-120b:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "arcee-ai/trinity-mini:free",
 ];
 
 async function callOpenRouter(
   apiKey: string,
   chatMessages: { role: string; content: string }[],
 ): Promise<Response> {
+  let lastStatus = 0;
+  let lastError = "";
+
   for (let attempt = 0; attempt < FREE_MODELS.length; attempt++) {
     const model = FREE_MODELS[attempt];
     const response = await fetch(`${OPENROUTER_BASE_URL}/chat/completions`, {
@@ -32,14 +36,15 @@ async function callOpenRouter(
       }),
     });
 
-    if (response.status === 429 || response.status === 503) {
-      continue;
+    if (response.ok) {
+      return response;
     }
 
-    return response;
+    lastStatus = response.status;
+    lastError = await response.text().catch(() => "unknown error");
   }
 
-  throw new Error("All models rate-limited. Please try again in a moment.");
+  throw new Error(`All models failed. Last status: ${lastStatus}. ${lastError}`);
 }
 
 router.post("/chat", async (req, res) => {
@@ -75,17 +80,10 @@ router.post("/chat", async (req, res) => {
     try {
       response = await callOpenRouter(apiKey, chatMessages);
     } catch (err) {
-      req.log.warn({ err }, "All models rate-limited");
+      req.log.warn({ err }, "All models failed");
       res.status(503).json({
         error: "Coach temporariamente sobrecarregado. Aguarde alguns segundos e tente novamente.",
       });
-      return;
-    }
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      req.log.error({ status: response.status, errorText }, "OpenRouter API error");
-      res.status(502).json({ error: "Erro ao conectar com a IA. Tente novamente." });
       return;
     }
 

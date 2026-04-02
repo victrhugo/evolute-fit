@@ -1,11 +1,16 @@
 {
   "buildCommand": "cd ../.. && pnpm install --frozen-lockfile && pnpm --filter @workspace/nutri-treino run build",
   "outputDirectory": "dist/public",
-  "installCommand": "echo 'skip'",
+  "installCommand": "echo skip",
   "framework": null,
+  "functions": {
+    "api/chat.ts": {
+      "maxDuration": 30
+    }
+  },
   "rewrites": [
     { "source": "/api/(.*)", "destination": "/api/$1" },
-    { "source": "/(.*)", "destination": "/index.html" }
+    { "source": "/((?!api/).*)", "destination": "/index.html" }
   ],
   "env": {
     "APP_URL": "@app_url"

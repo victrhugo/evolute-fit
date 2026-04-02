@@ -1,9 +1,10 @@
 const OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1";
 
 const FREE_MODELS = [
-  "google/gemma-3-27b-it:free",
-  "meta-llama/llama-3.3-70b-instruct:free",
-  "deepseek/deepseek-r1:free",
+  "qwen/qwen3.6-plus:free",
+  "openai/gpt-oss-120b:free",
+  "nvidia/nemotron-3-super-120b-a12b:free",
+  "arcee-ai/trinity-mini:free",
 ];
 
 export const config = {
@@ -32,14 +33,12 @@ async function callOpenRouter(
       }),
     });
 
-    if (response.status === 429 || response.status === 503) {
-      continue;
+    if (response.ok) {
+      return response;
     }
-
-    return response;
   }
 
-  throw new Error("All models rate-limited. Please try again in a moment.");
+  throw new Error("All models failed. Please try again.");
 }
 
 export default async function handler(req: any, res: any) {
@@ -88,11 +87,6 @@ export default async function handler(req: any, res: any) {
       error:
         "Coach temporariamente sobrecarregado. Aguarde alguns segundos e tente novamente.",
     });
-    return;
-  }
-
-  if (!openRouterResponse.ok) {
-    res.status(502).json({ error: "Erro ao conectar com a IA. Tente novamente." });
     return;
   }
 
