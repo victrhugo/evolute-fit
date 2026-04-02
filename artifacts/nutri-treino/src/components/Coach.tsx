@@ -210,8 +210,9 @@ export default function Coach({ plan, onClose }: CoachProps) {
       if (!reader) throw new Error("No response body");
 
       let buffer = "";
+      let streamDone = false;
 
-      while (true) {
+      while (!streamDone) {
         const { done, value } = await reader.read();
         if (done) break;
 
@@ -224,25 +225,34 @@ export default function Coach({ plan, onClose }: CoachProps) {
           const raw = line.slice(6).trim();
           if (!raw) continue;
 
+          let parsed: Record<string, unknown>;
           try {
-            const parsed = JSON.parse(raw);
-            if (parsed.done) break;
-            if (parsed.content) {
-              setMessages((prev) => {
-                const next = [...prev];
-                const last = next[next.length - 1];
-                if (last.role === "assistant") {
-                  next[next.length - 1] = {
-                    ...last,
-                    content: last.content + parsed.content,
-                  };
-                }
-                return next;
-              });
-            }
-            if (parsed.error) throw new Error(parsed.error);
+            parsed = JSON.parse(raw);
           } catch {
-            // skip malformed
+            continue;
+          }
+
+          if (parsed.done) {
+            streamDone = true;
+            break;
+          }
+
+          if (parsed.error) {
+            throw new Error(String(parsed.error));
+          }
+
+          if (parsed.content) {
+            setMessages((prev) => {
+              const next = [...prev];
+              const last = next[next.length - 1];
+              if (last.role === "assistant") {
+                next[next.length - 1] = {
+                  ...last,
+                  content: last.content + String(parsed.content),
+                };
+              }
+              return next;
+            });
           }
         }
       }
