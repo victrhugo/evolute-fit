@@ -1,4 +1,4 @@
-import type { IncomingMessage, ServerResponse } from "node:http";
+import type { IncomingMessage, ServerResponse } from "http";
 
 export const config = {
   maxDuration: 30,
@@ -180,11 +180,13 @@ export default async function handler(req: VercelRequest, res: ServerResponse) {
           continue;
         }
 
-        if (parsed.choices?.[0]?.delta?.reasoning) continue;
+        const choices = parsed.choices as
+          | Array<{ delta?: { content?: string; reasoning?: unknown } }>
+          | undefined;
 
-        const rawContent: string | undefined = (
-          parsed.choices as { delta?: { content?: string } }[]
-        )?.[0]?.delta?.content;
+        if (choices?.[0]?.delta?.reasoning) continue;
+
+        const rawContent: string | undefined = choices?.[0]?.delta?.content;
         if (!rawContent) continue;
 
         const content = stripThinkingContent(rawContent, inThinkBlock);
