@@ -86,6 +86,62 @@ Ofereça uma pergunta ou próximo passo.
 Mostre que a resposta pode ser refinada para o usuário.`;
 }
 
+function isAllCaps(line: string): boolean {
+  const trimmed = line.trim();
+  if (trimmed.length < 2) return false;
+  return trimmed === trimmed.toUpperCase() && /[A-ZÁÉÍÓÚÀÂÊÔÃÕÇÜ]/.test(trimmed);
+}
+
+function formatAssistantMessage(content: string): React.ReactNode {
+  const paragraphs = content.split(/\n{2,}/).map(p => p.trim()).filter(Boolean);
+
+  if (paragraphs.length <= 1) {
+    const lines = content.split("\n").map(l => l.trim()).filter(Boolean);
+    if (lines.length <= 1) return <span>{content}</span>;
+
+    return (
+      <div className="space-y-2.5">
+        {lines.map((line, i) =>
+          isAllCaps(line) ? (
+            <p key={i} className="text-[11px] font-bold tracking-widest text-primary/80 uppercase">
+              {line}
+            </p>
+          ) : (
+            <p key={i} className="text-sm leading-relaxed">{line}</p>
+          )
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-3">
+      {paragraphs.map((para, i) => {
+        const lines = para.split("\n").map(l => l.trim()).filter(Boolean);
+        const firstLine = lines[0];
+        const rest = lines.slice(1).join(" ");
+
+        if (isAllCaps(firstLine)) {
+          return (
+            <div key={i} className="space-y-1">
+              <p className="text-[11px] font-bold tracking-widest text-primary/80 uppercase">
+                {firstLine}
+              </p>
+              {rest && <p className="text-sm leading-relaxed text-foreground/85">{rest}</p>}
+            </div>
+          );
+        }
+
+        return (
+          <p key={i} className="text-sm leading-relaxed text-foreground/85">
+            {para.replace(/\n/g, " ")}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function Coach({ plan, onClose }: CoachProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -278,6 +334,8 @@ export default function Coach({ plan, onClose }: CoachProps) {
                     <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:150ms]" />
                     <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:300ms]" />
                   </span>
+                ) : msg.role === "assistant" ? (
+                  formatAssistantMessage(msg.content)
                 ) : (
                   msg.content
                 )}
