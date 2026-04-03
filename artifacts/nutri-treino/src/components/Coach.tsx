@@ -14,7 +14,7 @@ interface CoachProps {
 
 function buildSystemPrompt(plan: GeneratedPlan): string {
   const { userData, nutrition, workout, strategy, tips } = plan;
-  return `Você é o Coach IA do app Elevate — um especialista em nutrição esportiva e treinamento físico.
+  return `Você é o Coach IA do app Evolute — um especialista em nutrição esportiva e treinamento físico.
 
 DADOS DO USUÁRIO:
 - Idade: ${userData.age} anos
@@ -146,7 +146,7 @@ export default function Coach({ plan, onClose }: CoachProps) {
   const [messages, setMessages] = useState<Message[]>([
     {
       role: "assistant",
-      content: `Olá! Sou o seu coach do Elevate. Seu plano está pronto — posso te ajudar a tirar dúvidas, sugerir substituições alimentares, ajustar o treino ou qualquer outra coisa relacionada à sua evolução. O que você quer saber?`,
+      content: `Olá! Sou o seu coach do Evolute. Seu plano está pronto — posso te ajudar a tirar dúvidas, sugerir substituições alimentares, ajustar o treino ou qualquer outra coisa relacionada à sua evolução. O que você quer saber?`,
     },
   ]);
   const [input, setInput] = useState("");

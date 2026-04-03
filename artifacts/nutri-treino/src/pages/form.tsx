@@ -127,9 +127,9 @@ export default function FormPage() {
 
         <div className="flex items-center gap-3 mb-2">
           <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-            <Zap className="w-3.5 h-3.5 text-primary-foreground" fill="currentColor" />
+            <span className="font-extrabold text-xs text-primary-foreground leading-none">E</span>
           </div>
-          <span className="font-bold text-base">Elevate</span>
+          <span className="font-bold text-base">Evolute</span>
         </div>
 
         <div className="flex items-center justify-between mt-6 mb-4">

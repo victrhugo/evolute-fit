@@ -9,9 +9,9 @@ export default function Home() {
       <header className="fixed top-0 left-0 right-0 z-50 px-6 lg:px-12 h-16 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur-md">
         <div className="flex items-center gap-2.5">
           <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <Zap className="w-4 h-4 text-primary-foreground" fill="currentColor" />
+            <span className="font-extrabold text-sm text-primary-foreground leading-none">E</span>
           </div>
-          <span className="font-bold text-lg tracking-tight">Elevate</span>
+          <span className="font-bold text-lg tracking-tight">Evolute</span>
         </div>
         <Link href="/formulario">
           <button
@@ -159,7 +159,7 @@ export default function Home() {
 
       <footer className="py-8 text-center border-t border-border">
         <p className="text-xs text-muted-foreground/50 font-medium uppercase tracking-widest">
-          &copy; {new Date().getFullYear()} Elevate &mdash; Seu próximo nível começa aqui.
+          &copy; {new Date().getFullYear()} Evolute &mdash; Seu próximo nível começa aqui.
         </p>
       </footer>
     </div>
