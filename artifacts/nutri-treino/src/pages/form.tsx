@@ -4,6 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { ArrowLeft, ArrowRight, Zap, CheckCircle2, Loader2 } from "lucide-react";
+import AuthButton from "@/components/AuthButton";
 
 import {
   Form,
@@ -125,11 +126,14 @@ export default function FormPage() {
           </button>
         </Link>
 
-        <div className="flex items-center gap-3 mb-2">
-          <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-            <span className="font-extrabold text-xs text-primary-foreground leading-none">E</span>
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-3">
+            <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
+              <span className="font-extrabold text-xs text-primary-foreground leading-none">E</span>
+            </div>
+            <span className="font-bold text-base">Evolute</span>
           </div>
-          <span className="font-bold text-base">Evolute</span>
+          <AuthButton />
         </div>
 
         <div className="flex items-center justify-between mt-6 mb-4">

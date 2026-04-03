@@ -4,6 +4,7 @@ import {
   ArrowLeft, Flame, Utensils, Dumbbell, Zap,
   TrendingUp, AlertTriangle, CheckCircle2, ChevronDown, RotateCcw
 } from "lucide-react";
+import AuthButton from "@/components/AuthButton";
 import {
   Accordion,
   AccordionContent,
@@ -68,11 +69,14 @@ export default function PlanPage() {
               Refazer
             </button>
           </Link>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
-              <span className="font-extrabold text-[10px] text-primary-foreground leading-none">E</span>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
+                <span className="font-extrabold text-[10px] text-primary-foreground leading-none">E</span>
+              </div>
+              <span className="font-bold text-sm">Evolute</span>
             </div>
-            <span className="font-bold text-sm">Evolute</span>
+            <AuthButton />
           </div>
         </div>
       </div>

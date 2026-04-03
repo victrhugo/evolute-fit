@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { ArrowRight, Zap, Utensils, Dumbbell, TrendingUp, ChevronRight } from "lucide-react";
+import AuthButton from "@/components/AuthButton";
 
 export default function Home() {
   return (
@@ -13,14 +14,17 @@ export default function Home() {
           </div>
           <span className="font-bold text-lg tracking-tight">Evolute</span>
         </div>
-        <Link href="/formulario">
-          <button
-            data-testid="link-start-nav"
-            className="btn-glow text-sm font-semibold bg-primary text-primary-foreground px-5 py-2 rounded-lg"
-          >
-            Criar meu plano
-          </button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <AuthButton />
+          <Link href="/formulario">
+            <button
+              data-testid="link-start-nav"
+              className="btn-glow text-sm font-semibold bg-primary text-primary-foreground px-5 py-2 rounded-lg"
+            >
+              Criar meu plano
+            </button>
+          </Link>
+        </div>
       </header>
 
       <main className="flex-1 pt-16">
