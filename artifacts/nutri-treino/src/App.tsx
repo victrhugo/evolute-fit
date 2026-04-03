@@ -8,6 +8,7 @@ import Home from "@/pages/home";
 import FormPage from "@/pages/form";
 import PlanPage from "@/pages/plan";
 import SuccessPage from "@/pages/success";
+import AuthCallback from "@/pages/auth-callback";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -19,6 +20,7 @@ function Router() {
       <Route path="/formulario" component={FormPage} />
       <Route path="/plano" component={PlanPage} />
       <Route path="/success" component={SuccessPage} />
+      <Route path="/auth/callback" component={AuthCallback} />
       <Route component={NotFound} />
     </Switch>
   );
