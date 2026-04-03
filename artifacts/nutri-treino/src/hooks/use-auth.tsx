@@ -14,6 +14,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 async function saveUserToDb(user: User) {
+  if (!supabase) return;
   try {
     await supabase
       .from("users")
@@ -24,6 +25,7 @@ async function saveUserToDb(user: User) {
 }
 
 async function fetchIsPremium(userId: string): Promise<boolean> {
+  if (!supabase) return false;
   try {
     const { data } = await supabase
       .from("users")
@@ -49,6 +51,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [user]);
 
   useEffect(() => {
+    if (!supabase) {
+      setIsLoading(false);
+      return;
+    }
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
@@ -82,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   async function signIn(email: string) {
+    if (!supabase) throw new Error("Auth is not configured.");
     const { error } = await supabase.auth.signInWithOtp({
       email,
       options: { emailRedirectTo: window.location.origin },
@@ -90,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
+    if (!supabase) return;
     await supabase.auth.signOut();
     setUser(null);
     setIsPremium(false);
