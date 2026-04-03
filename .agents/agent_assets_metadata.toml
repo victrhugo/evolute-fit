@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "kf9xKirqbYVori0T-m0QK"
+uri = "file://README.md"
+type = "text"
+title = "README — Evolute"
