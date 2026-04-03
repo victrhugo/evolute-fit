@@ -1,8 +1,6 @@
 import { useState } from "react";
-import { LogIn, LogOut, Mail, Check, Loader2, User } from "lucide-react";
+import { LogOut, Loader2, User } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-
-type LoginState = "idle" | "input" | "sent" | "loading" | "google-loading";
 
 function GoogleIcon() {
   return (
@@ -16,47 +14,20 @@ function GoogleIcon() {
 }
 
 export default function AuthButton() {
-  const { user, isLoading, signIn, signInWithGoogle, signOut } = useAuth();
-  const [loginState, setLoginState] = useState<LoginState>("idle");
-  const [email, setEmail] = useState("");
+  const { user, isLoading, signInWithGoogle, signOut } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   async function handleGoogleLogin() {
     setError("");
-    setLoginState("google-loading");
+    setLoading(true);
     try {
       await signInWithGoogle();
-      // Page will redirect; no state reset needed
+      // Browser will redirect; loading state stays until navigation
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao entrar com Google.";
       setError(msg);
-      setLoginState("idle");
-    }
-  }
-
-  async function handleSendLink() {
-    if (!email.trim() || !email.includes("@")) {
-      setError("Digite um email válido.");
-      return;
-    }
-    setError("");
-    setLoginState("loading");
-    try {
-      await signIn(email.trim());
-      setLoginState("sent");
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Erro ao enviar.";
-      setError(msg);
-      setLoginState("input");
-    }
-  }
-
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === "Enter") handleSendLink();
-    if (e.key === "Escape") {
-      setLoginState("idle");
-      setEmail("");
-      setError("");
+      setLoading(false);
     }
   }
 
@@ -86,87 +57,23 @@ export default function AuthButton() {
     );
   }
 
-  if (loginState === "sent") {
-    return (
-      <div className="flex items-center gap-2 text-xs text-primary font-medium bg-primary/10 border border-primary/20 rounded-lg px-3 py-1.5">
-        <Check className="w-3.5 h-3.5 shrink-0" />
-        <span>Verifique seu email</span>
-      </div>
-    );
-  }
-
-  if (loginState === "input" || loginState === "loading") {
-    return (
-      <div className="flex items-center gap-2">
-        <div className="flex items-center gap-1.5 bg-card border border-border rounded-lg px-2 py-1 focus-within:border-primary/50 transition-colors">
-          <Mail className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
-          <input
-            autoFocus
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setError("");
-            }}
-            onKeyDown={handleKeyDown}
-            placeholder="seu@email.com"
-            disabled={loginState === "loading"}
-            className="w-40 sm:w-52 bg-transparent text-xs text-foreground placeholder:text-muted-foreground/50 outline-none disabled:opacity-50"
-          />
-        </div>
-        <button
-          onClick={handleSendLink}
-          disabled={loginState === "loading"}
-          className="flex items-center gap-1.5 text-xs font-semibold bg-primary text-primary-foreground px-3 py-1.5 rounded-lg disabled:opacity-50 transition-opacity"
-        >
-          {loginState === "loading" ? (
-            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          ) : (
-            "Enviar link"
-          )}
-        </button>
-        <button
-          onClick={() => {
-            setLoginState("idle");
-            setEmail("");
-            setError("");
-          }}
-          className="text-xs text-muted-foreground hover:text-foreground transition-colors"
-        >
-          ✕
-        </button>
-        {error && (
-          <span className="text-xs text-destructive absolute mt-8">{error}</span>
-        )}
-      </div>
-    );
-  }
-
-  // Idle state: show Google button + email option
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-col items-end gap-1">
       <button
         onClick={handleGoogleLogin}
-        disabled={loginState === "google-loading"}
+        disabled={loading}
         className="flex items-center gap-2 text-sm font-medium bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:border-gray-400 px-3 py-1.5 rounded-lg transition-colors duration-200 shadow-sm disabled:opacity-60"
       >
-        {loginState === "google-loading" ? (
+        {loading ? (
           <Loader2 className="w-4 h-4 animate-spin text-gray-500" />
         ) : (
           <GoogleIcon />
         )}
-        <span className="hidden sm:inline">
-          {loginState === "google-loading" ? "Entrando…" : "Entrar com Google"}
-        </span>
+        <span>{loading ? "Entrando…" : "Entrar com Google"}</span>
       </button>
-      <button
-        onClick={() => setLoginState("input")}
-        title="Entrar com email"
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-foreground/20 px-3 py-1.5 rounded-lg transition-colors duration-200"
-      >
-        <LogIn className="w-3.5 h-3.5" />
-        <span className="hidden sm:inline">Email</span>
-      </button>
+      {error && (
+        <span className="text-xs text-destructive">{error}</span>
+      )}
     </div>
   );
 }

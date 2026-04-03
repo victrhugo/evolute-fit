@@ -6,7 +6,6 @@ interface AuthContextValue {
   user: User | null;
   isPremium: boolean;
   isLoading: boolean;
-  signIn: (email: string) => Promise<void>;
   signInWithGoogle: () => Promise<void>;
   signOut: () => Promise<void>;
   refreshPremium: () => Promise<void>;
@@ -89,20 +88,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  async function signIn(email: string) {
-    if (!supabase) throw new Error("Auth is not configured.");
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    if (error) throw error;
-  }
-
   async function signInWithGoogle() {
     if (!supabase) throw new Error("Auth is not configured.");
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      options: { redirectTo: window.location.origin },
+      options: { redirectTo: "https://evolute-fit.site/auth/callback" },
     });
     if (error) throw error;
   }
@@ -115,7 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <AuthContext.Provider value={{ user, isPremium, isLoading, signIn, signInWithGoogle, signOut, refreshPremium }}>
+    <AuthContext.Provider value={{ user, isPremium, isLoading, signInWithGoogle, signOut, refreshPremium }}>
       {children}
     </AuthContext.Provider>
   );
