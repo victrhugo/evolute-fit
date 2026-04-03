@@ -20,8 +20,9 @@ export default function AuthButton() {
     try {
       await signIn(email.trim());
       setLoginState("sent");
-    } catch {
-      setError("Erro ao enviar. Tente novamente.");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Erro ao enviar.";
+      setError(msg);
       setLoginState("input");
     }
   }
