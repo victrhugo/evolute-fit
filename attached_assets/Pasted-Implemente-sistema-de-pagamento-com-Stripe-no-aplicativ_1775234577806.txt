@@ -1,0 +1,101 @@
+Implemente sistema de pagamento com Stripe no aplicativo existente, integrando com Supabase e o sistema de login já configurado.
+
+CONTEXTO IMPORTANTE:
+- O app já possui autenticação com Supabase funcionando
+- O usuário já pode estar logado (email disponível)
+- A variável STRIPE_SECRET_KEY já está configurada nos Secrets do Replit
+
+OBJETIVO:
+Permitir que o usuário compre o plano premium e tenha acesso liberado automaticamente.
+
+FUNCIONALIDADES:
+
+1. BOTÃO DE PAGAMENTO
+- Adicionar botão: "Desbloquear Premium"
+- Exibir apenas para usuários NÃO premium
+
+2. CRIAR ENDPOINT DE CHECKOUT
+
+Criar rota:
+
+POST /api/create-checkout-session
+
+- Usar Stripe com process.env.STRIPE_SECRET_KEY
+- Criar sessão de pagamento:
+  - produto: Elevate Premium
+  - valor: R$14,90 (1490 em centavos)
+  - tipo: pagamento único
+  - incluir email do usuário logado
+
+- Redirecionar para Stripe Checkout
+
+3. REDIRECIONAMENTO
+
+Após pagamento:
+- success_url → /success
+- cancel_url → página inicial
+
+4. CRIAR WEBHOOK
+
+Criar endpoint:
+
+POST /api/webhook
+
+- Receber evento: checkout.session.completed
+- Extrair email do usuário
+- Atualizar no Supabase:
+
+is_premium = true
+
+- Identificar usuário pelo email
+
+5. INTEGRAÇÃO COM SUPABASE
+
+- Atualizar tabela "users"
+- Campo:
+  is_premium (boolean)
+
+6. LIBERAÇÃO DE FUNCIONALIDADES
+
+No frontend:
+
+- Se user.is_premium = true:
+  - liberar chat com IA
+  - liberar plano completo
+
+- Se false:
+  - manter bloqueios
+  - mostrar botão premium
+
+7. INTERFACE
+
+- Mostrar claramente:
+  - versão gratuita
+  - versão premium
+- Interface moderna e limpa
+- Não quebrar layout atual
+
+8. PÁGINA DE SUCESSO
+
+Criar rota:
+
+/success
+
+- Mostrar mensagem:
+  "Pagamento confirmado! Seu acesso premium foi liberado."
+
+9. ORGANIZAÇÃO
+
+- Código limpo
+- Separar lógica de pagamento
+- Não duplicar código
+
+IMPORTANTE:
+
+- NÃO quebrar funcionalidades existentes
+- NÃO alterar sistema de login
+- Garantir que pagamento libera premium corretamente
+
+RESULTADO ESPERADO:
+
+Usuário consegue pagar, e automaticamente recebe acesso premium no sistema, incluindo chat com IA e funcionalidades completas.

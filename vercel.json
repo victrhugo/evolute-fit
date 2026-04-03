@@ -4,7 +4,9 @@
   "installCommand": "pnpm install --frozen-lockfile",
   "functions": {
     "api/chat.ts": { "maxDuration": 30 },
-    "api/healthz.ts": { "maxDuration": 5 }
+    "api/healthz.ts": { "maxDuration": 5 },
+    "api/create-checkout-session.ts": { "maxDuration": 10 },
+    "api/webhook.ts": { "maxDuration": 10 }
   },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }

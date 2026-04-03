@@ -1,12 +1,14 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState } from "react";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "@/lib/supabase";
 
 interface AuthContextValue {
   user: User | null;
+  isPremium: boolean;
   isLoading: boolean;
   signIn: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshPremium: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -17,17 +19,43 @@ async function saveUserToDb(user: User) {
       .from("users")
       .upsert({ id: user.id, email: user.email }, { onConflict: "id" });
   } catch {
-    // Non-critical — table may not exist yet
+    // Non-critical
+  }
+}
+
+async function fetchIsPremium(userId: string): Promise<boolean> {
+  try {
+    const { data } = await supabase
+      .from("users")
+      .select("is_premium")
+      .eq("id", userId)
+      .single();
+    return data?.is_premium ?? false;
+  } catch {
+    return false;
   }
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isPremium, setIsPremium] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
+  const refreshPremium = useCallback(async () => {
+    if (user) {
+      const premium = await fetchIsPremium(user.id);
+      setIsPremium(premium);
+    }
+  }, [user]);
+
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      const currentUser = session?.user ?? null;
+      setUser(currentUser);
+      if (currentUser) {
+        const premium = await fetchIsPremium(currentUser.id);
+        setIsPremium(premium);
+      }
       setIsLoading(false);
     });
 
@@ -36,11 +64,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } = supabase.auth.onAuthStateChange(async (event, session) => {
       const currentUser = session?.user ?? null;
       setUser(currentUser);
-      setIsLoading(false);
 
       if (event === "SIGNED_IN" && currentUser) {
         await saveUserToDb(currentUser);
+        const premium = await fetchIsPremium(currentUser.id);
+        setIsPremium(premium);
       }
+
+      if (event === "SIGNED_OUT") {
+        setIsPremium(false);
+      }
+
+      setIsLoading(false);
     });
 
     return () => subscription.unsubscribe();
@@ -49,19 +84,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   async function signIn(email: string) {
     await supabase.auth.signInWithOtp({
       email,
-      options: {
-        emailRedirectTo: window.location.origin,
-      },
+      options: { emailRedirectTo: window.location.origin },
     });
   }
 
   async function signOut() {
     await supabase.auth.signOut();
     setUser(null);
+    setIsPremium(false);
   }
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, isPremium, isLoading, signIn, signOut, refreshPremium }}>
       {children}
     </AuthContext.Provider>
   );

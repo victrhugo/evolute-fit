@@ -5,6 +5,7 @@ import {
   TrendingUp, AlertTriangle, CheckCircle2, ChevronDown, RotateCcw
 } from "lucide-react";
 import AuthButton from "@/components/AuthButton";
+import { PremiumCTA, PremiumCoachButton } from "@/components/PremiumGate";
 import {
   Accordion,
   AccordionContent,
@@ -12,7 +13,8 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { GeneratedPlan } from "@/lib/planGenerator";
-import Coach, { CoachButton } from "@/components/Coach";
+import Coach from "@/components/Coach";
+import { useAuth } from "@/hooks/use-auth";
 
 function MacroBadge({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
   return (
@@ -27,6 +29,7 @@ export default function PlanPage() {
   const [, setLocation] = useLocation();
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
   const [showCoach, setShowCoach] = useState(false);
+  const { isPremium } = useAuth();
 
   useEffect(() => {
     const data = localStorage.getItem("nutri-treino-plan");
@@ -57,8 +60,8 @@ export default function PlanPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground pb-24">
-      {showCoach && <Coach plan={plan} onClose={() => setShowCoach(false)} />}
-      <CoachButton onClick={() => setShowCoach(true)} />
+      {showCoach && isPremium && <Coach plan={plan} onClose={() => setShowCoach(false)} />}
+      <PremiumCoachButton onClick={() => setShowCoach(true)} />
 
       {/* Header */}
       <div className="border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40 px-6 py-4">
@@ -157,10 +160,11 @@ export default function PlanPage() {
             <h2 className="text-2xl font-black tracking-tight">Treino Semanal</h2>
           </div>
 
-          <div className="card-premium rounded-2xl p-2">
-            <Accordion type="multiple" className="w-full space-y-1">
-              {plan.workout.map((day, i) => (
-                <AccordionItem key={i} value={`day-${i}`} className="border-none rounded-xl overflow-hidden">
+          {/* Day 1 — free for everyone */}
+          {plan.workout.slice(0, 1).map((day, i) => (
+            <div key={i} className="card-premium rounded-2xl p-2">
+              <Accordion type="multiple" className="w-full space-y-1">
+                <AccordionItem value={`day-${i}`} className="border-none rounded-xl overflow-hidden">
                   <AccordionTrigger
                     data-testid={`accordion-day-${i}`}
                     className="hover:no-underline px-5 py-5 hover:bg-muted/30 rounded-xl transition-colors duration-200 [&[data-state=open]]:bg-muted/20"
@@ -190,9 +194,82 @@ export default function PlanPage() {
                     </div>
                   </AccordionContent>
                 </AccordionItem>
-              ))}
-            </Accordion>
-          </div>
+              </Accordion>
+            </div>
+          ))}
+
+          {/* Remaining days — premium only */}
+          {plan.workout.length > 1 && (
+            isPremium ? (
+              <div className="card-premium rounded-2xl p-2">
+                <Accordion type="multiple" className="w-full space-y-1">
+                  {plan.workout.slice(1).map((day, idx) => {
+                    const i = idx + 1;
+                    return (
+                      <AccordionItem key={i} value={`day-${i}`} className="border-none rounded-xl overflow-hidden">
+                        <AccordionTrigger
+                          data-testid={`accordion-day-${i}`}
+                          className="hover:no-underline px-5 py-5 hover:bg-muted/30 rounded-xl transition-colors duration-200 [&[data-state=open]]:bg-muted/20"
+                        >
+                          <div className="flex items-center gap-4 text-left">
+                            <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                              <span className="text-primary font-black text-xs">{i + 1}</span>
+                            </div>
+                            <div>
+                              <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-0.5">{day.day}</div>
+                              <div className="text-base font-bold">{day.focus}</div>
+                            </div>
+                          </div>
+                        </AccordionTrigger>
+                        <AccordionContent className="px-5 pb-5 pt-1">
+                          <div className="space-y-2.5">
+                            {day.exercises.map((ex, j) => (
+                              <div key={j} data-testid={`exercise-${i}-${j}`} className="flex flex-col sm:flex-row sm:items-center justify-between bg-muted/30 border border-border rounded-xl px-4 py-3 gap-3">
+                                <span className="font-semibold text-sm">{ex.name}</span>
+                                <div className="flex gap-2 flex-wrap">
+                                  <span className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-medium"><span className="text-muted-foreground mr-1">Séries</span>{ex.sets}</span>
+                                  <span className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-medium"><span className="text-muted-foreground mr-1">Reps</span>{ex.reps}</span>
+                                  <span className="text-xs bg-background border border-border rounded-lg px-3 py-1.5 font-medium"><span className="text-muted-foreground mr-1">Descanso</span>{ex.rest}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </AccordionContent>
+                      </AccordionItem>
+                    );
+                  })}
+                </Accordion>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="opacity-25 blur-[2px] pointer-events-none select-none card-premium rounded-2xl p-2">
+                  <Accordion type="multiple" className="w-full space-y-1">
+                    {plan.workout.slice(1).map((day, idx) => {
+                      const i = idx + 1;
+                      return (
+                        <AccordionItem key={i} value={`day-${i}`} className="border-none rounded-xl overflow-hidden">
+                          <AccordionTrigger className="hover:no-underline px-5 py-5 rounded-xl">
+                            <div className="flex items-center gap-4 text-left">
+                              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                                <span className="text-primary font-black text-xs">{i + 1}</span>
+                              </div>
+                              <div>
+                                <div className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-0.5">{day.day}</div>
+                                <div className="text-base font-bold">{day.focus}</div>
+                              </div>
+                            </div>
+                          </AccordionTrigger>
+                        </AccordionItem>
+                      );
+                    })}
+                  </Accordion>
+                </div>
+                <div className="absolute inset-0 flex items-center justify-center z-10 py-8">
+                  <PremiumCTA label="todos os dias de treino" />
+                </div>
+              </div>
+            )
+          )}
         </section>
 
         {/* Tips + Timeline */}

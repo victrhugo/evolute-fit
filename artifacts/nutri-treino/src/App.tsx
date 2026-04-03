@@ -7,6 +7,7 @@ import { AuthProvider } from "@/hooks/use-auth";
 import Home from "@/pages/home";
 import FormPage from "@/pages/form";
 import PlanPage from "@/pages/plan";
+import SuccessPage from "@/pages/success";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/formulario" component={FormPage} />
       <Route path="/plano" component={PlanPage} />
+      <Route path="/success" component={SuccessPage} />
       <Route component={NotFound} />
     </Switch>
   );

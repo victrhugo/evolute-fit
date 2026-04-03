@@ -13,5 +13,9 @@
     "@types/node": "catalog:",
     "prettier": "^3.8.1",
     "typescript": "~5.9.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.101.1",
+    "stripe": "^21.0.1"
   }
 }
