@@ -16,6 +16,7 @@ function GoogleIcon() {
 export default function AuthButton() {
   const { user, isLoading, signInWithGoogle, signOut } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
   const [error, setError] = useState("");
 
   async function handleGoogleLogin() {
@@ -27,6 +28,16 @@ export default function AuthButton() {
       const msg = err instanceof Error ? err.message : "Erro ao entrar com Google.";
       setError(msg);
       setLoading(false);
+    }
+  }
+
+  async function handleSignOut() {
+    setSigningOut(true);
+    try {
+      await signOut();
+    } catch {
+      // Even if signOut fails, force-navigate to home to clear UI
+      window.location.href = "/";
     }
   }
 
@@ -57,12 +68,17 @@ export default function AuthButton() {
 
         {/* Logout button */}
         <button
-          onClick={signOut}
+          onClick={handleSignOut}
+          disabled={signingOut}
           title="Sair"
-          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border hover:border-foreground/20 rounded-lg px-3 py-1.5 transition-colors duration-200"
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border hover:border-foreground/20 rounded-lg px-3 py-1.5 transition-colors duration-200 disabled:opacity-50"
         >
-          <LogOut className="w-3.5 h-3.5 shrink-0" />
-          <span>Sair</span>
+          {signingOut ? (
+            <Loader2 className="w-3.5 h-3.5 shrink-0 animate-spin" />
+          ) : (
+            <LogOut className="w-3.5 h-3.5 shrink-0" />
+          )}
+          <span>{signingOut ? "Saindo…" : "Sair"}</span>
         </button>
       </div>
     );

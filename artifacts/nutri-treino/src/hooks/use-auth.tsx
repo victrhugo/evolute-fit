@@ -108,8 +108,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
-    if (!supabase) return;
-    await supabase.auth.signOut();
+    if (supabase) {
+      // Race against a 3-second timeout so the page always navigates
+      await Promise.race([
+        supabase.auth.signOut(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
+      ]).catch(() => {});
+    }
     setUser(null);
     setIsPremium(false);
     window.location.href = "/";
