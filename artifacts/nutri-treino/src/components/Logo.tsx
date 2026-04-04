@@ -16,7 +16,7 @@ export default function Logo({ size = "md" }: LogoProps) {
       aria-label="Ir para o início"
     >
       <img
-        src="/logo-evolute.png"
+        src="/logo-full.png"
         alt="Evolute"
         className={`${height} w-auto object-contain`}
       />
