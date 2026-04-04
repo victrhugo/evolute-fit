@@ -15,7 +15,7 @@ import {
 import { GeneratedPlan } from "@/lib/planGenerator";
 import Coach from "@/components/Coach";
 import { useAuth } from "@/hooks/use-auth";
-import { loadPlan, clearLocalPlan, deletePlanFromCloud } from "@/lib/planStorage";
+import { loadPlanLocally, loadPlanFromCloud, savePlanLocally, clearLocalPlan, deletePlanFromCloud } from "@/lib/planStorage";
 
 function MacroBadge({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
   return (
@@ -35,19 +35,25 @@ export default function PlanPage() {
   const { isPremium, user } = useAuth();
 
   useEffect(() => {
-    let cancelled = false;
-    async function fetchPlan() {
-      const loaded = await loadPlan(user?.id ?? null);
-      if (cancelled) return;
-      if (!loaded) {
-        setLocation("/formulario");
-      } else {
-        setPlan(loaded);
-        setSavedToCloud(!!user);
-      }
+    // Always load from localStorage immediately — no waiting on network
+    const local = loadPlanLocally();
+    if (!local) {
+      setLocation("/formulario");
+      return;
     }
-    fetchPlan();
-    return () => { cancelled = true; };
+    setPlan(local);
+
+    // Optionally sync a fresher copy from cloud in background (no spinner)
+    if (user?.id) {
+      let cancelled = false;
+      loadPlanFromCloud(user.id).then((cloud) => {
+        if (cancelled || !cloud) return;
+        setPlan(cloud);
+        savePlanLocally(cloud);
+        setSavedToCloud(true);
+      }).catch(() => {});
+      return () => { cancelled = true; };
+    }
   }, [user, setLocation]);
 
   async function handleRedo() {

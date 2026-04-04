@@ -50,14 +50,17 @@ export async function savePlanToCloud(userId: string, plan: GeneratedPlan): Prom
 export async function loadPlanFromCloud(userId: string): Promise<GeneratedPlan | null> {
   if (!supabase) return null;
   try {
-    const { data, error } = await supabase
+    const timeout = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+    const query = supabase
       .from("plans")
       .select("content, created_at")
       .eq("user_id", userId)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
-
+    const result = await Promise.race([query, timeout]);
+    if (!result) return null;
+    const { data, error } = result as Awaited<typeof query>;
     if (error || !data) return null;
     return JSON.parse(data.content) as GeneratedPlan;
   } catch {
