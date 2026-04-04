@@ -30,7 +30,11 @@ export default function AuthButton() {
     }
   }
 
-  if (isLoading) return null;
+  if (isLoading) {
+    return (
+      <div className="w-28 h-8 rounded-lg bg-muted/40 animate-pulse" />
+    );
+  }
 
   if (user) {
     const avatarUrl = user.user_metadata?.avatar_url as string | undefined;

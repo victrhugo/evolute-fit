@@ -56,13 +56,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
+    // Safety timeout: never stay in loading state longer than 5 seconds
+    const timeout = setTimeout(() => setIsLoading(false), 5000);
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      clearTimeout(timeout);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
         const premium = await fetchIsPremium(currentUser.id);
         setIsPremium(premium);
       }
+      setIsLoading(false);
+    }).catch(() => {
+      clearTimeout(timeout);
       setIsLoading(false);
     });
 
@@ -85,7 +92,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      clearTimeout(timeout);
+      subscription.unsubscribe();
+    };
   }, []);
 
   async function signInWithGoogle() {
