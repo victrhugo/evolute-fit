@@ -7,7 +7,7 @@ interface LogoProps {
 export default function Logo({ size = "md" }: LogoProps) {
   const [, setLocation] = useLocation();
 
-  const height = size === "sm" ? "h-8" : "h-11";
+  const height = size === "sm" ? "h-10" : "h-14";
 
   return (
     <button
