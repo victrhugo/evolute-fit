@@ -6,7 +6,7 @@ import * as z from "zod";
 import { ArrowLeft, ArrowRight, Zap, CheckCircle2, Loader2 } from "lucide-react";
 import AuthButton from "@/components/AuthButton";
 import { useAuth } from "@/hooks/use-auth";
-import { savePlan } from "@/lib/planStorage";
+import { savePlanLocally, savePlanToCloud } from "@/lib/planStorage";
 
 import {
   Form,
@@ -75,10 +75,17 @@ export default function FormPage() {
 
   function onSubmit(values: FormValues) {
     setGenerating(true);
-    setTimeout(async () => {
-      const plan = generatePlan(values as UserData);
-      await savePlan(user?.id ?? null, plan);
-      setLocation("/plano");
+    setTimeout(() => {
+      try {
+        const plan = generatePlan(values as UserData);
+        savePlanLocally(plan);
+        setLocation("/plano");
+        if (user?.id) {
+          savePlanToCloud(user.id, plan).catch(() => {});
+        }
+      } catch {
+        setGenerating(false);
+      }
     }, 1200);
   }
 
