@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { LogOut, Loader2, User } from "lucide-react";
+import { LogOut, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 function GoogleIcon() {
@@ -23,7 +23,6 @@ export default function AuthButton() {
     setLoading(true);
     try {
       await signInWithGoogle();
-      // Browser will redirect; loading state stays until navigation
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Erro ao entrar com Google.";
       setError(msg);
@@ -34,24 +33,32 @@ export default function AuthButton() {
   if (isLoading) return null;
 
   if (user) {
-    const displayEmail =
-      user.email && user.email.length > 20
-        ? user.email.slice(0, 18) + "…"
-        : user.email;
+    const avatarUrl = user.user_metadata?.avatar_url as string | undefined;
+    const name = (user.user_metadata?.full_name ?? user.user_metadata?.name ?? user.email) as string;
+    const displayName = name.length > 22 ? name.slice(0, 20) + "…" : name;
 
     return (
       <div className="flex items-center gap-2">
-        <div className="hidden sm:flex items-center gap-1.5 text-xs text-muted-foreground bg-card border border-border rounded-lg px-3 py-1.5">
-          <User className="w-3 h-3 shrink-0" />
-          <span className="font-medium">{displayEmail}</span>
+        {/* User pill */}
+        <div className="flex items-center gap-2 text-xs text-muted-foreground bg-card border border-border rounded-lg px-2.5 py-1.5">
+          {avatarUrl ? (
+            <img src={avatarUrl} alt={displayName} className="w-5 h-5 rounded-full object-cover" />
+          ) : (
+            <div className="w-5 h-5 rounded-full bg-primary/20 flex items-center justify-center text-primary font-bold text-[10px]">
+              {name.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span className="font-medium hidden sm:block">{displayName}</span>
         </div>
+
+        {/* Logout button */}
         <button
           onClick={signOut}
           title="Sair"
-          className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground border border-border hover:border-foreground/20 rounded-lg px-3 py-1.5 transition-colors duration-200"
+          className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground border border-border hover:border-foreground/20 rounded-lg px-3 py-1.5 transition-colors duration-200"
         >
-          <LogOut className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Sair</span>
+          <LogOut className="w-3.5 h-3.5 shrink-0" />
+          <span>Sair</span>
         </button>
       </div>
     );

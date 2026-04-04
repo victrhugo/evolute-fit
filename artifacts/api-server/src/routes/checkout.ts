@@ -20,7 +20,7 @@ function getSupabase() {
 router.post("/create-checkout-session", async (req, res) => {
   try {
     const stripe = getStripe();
-    const { email } = req.body as { email?: string };
+    const { email, userId } = req.body as { email?: string; userId?: string };
     const origin =
       (req.headers.origin as string) ||
       (req.headers.referer as string)?.split("/").slice(0, 3).join("/") ||
@@ -44,6 +44,7 @@ router.post("/create-checkout-session", async (req, res) => {
       ],
       mode: "payment",
       ...(email ? { customer_email: email } : {}),
+      ...(userId ? { client_reference_id: userId } : {}),
       success_url: `${origin}/success`,
       cancel_url: `${origin}/`,
     });
@@ -75,22 +76,35 @@ router.post("/webhook", async (req, res) => {
 
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session;
+    const userId = session.client_reference_id;
     const email = session.customer_email;
 
-    if (email) {
-      try {
-        const supabase = getSupabase();
+    try {
+      const supabase = getSupabase();
+
+      if (userId) {
+        // Preferred: update by user ID (reliable, no email collision)
+        const { error } = await supabase
+          .from("users")
+          .update({ is_premium: true })
+          .eq("id", userId);
+
+        if (error) {
+          console.error("Supabase update by userId error:", error.message);
+        }
+      } else if (email) {
+        // Fallback: update by email if userId was not provided
         const { error } = await supabase
           .from("users")
           .update({ is_premium: true })
           .eq("email", email);
 
         if (error) {
-          console.error("Supabase update error:", error.message);
+          console.error("Supabase update by email error:", error.message);
         }
-      } catch (e) {
-        console.error("Failed to update premium status:", e);
       }
+    } catch (e) {
+      console.error("Failed to update premium status:", e);
     }
   }
 

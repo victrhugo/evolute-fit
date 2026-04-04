@@ -45,7 +45,7 @@ export function PremiumCTA({ label = "funcionalidades premium" }: { label?: stri
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user?.email ?? "" }),
+        body: JSON.stringify({ email: user?.email ?? "", userId: user?.id ?? "" }),
       });
       const data = await res.json() as { url?: string; error?: string };
       if (data.url) {
@@ -112,7 +112,7 @@ export function PremiumCoachButton({ onClick }: { onClick: () => void }) {
       const res = await fetch("/api/create-checkout-session", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user?.email ?? "" }),
+        body: JSON.stringify({ email: user?.email ?? "", userId: user?.id ?? "" }),
       });
       const data = await res.json() as { url?: string; error?: string };
       if (data.url) window.location.href = data.url;
