@@ -197,10 +197,13 @@ export default function Home() {
         </section>
       </main>
 
-      <footer className="py-8 text-center border-t border-border">
-        <p className="text-xs text-muted-foreground/50 font-medium uppercase tracking-widest">
-          &copy; {new Date().getFullYear()} Evolute &mdash; Seu próximo nível começa aqui.
-        </p>
+      <footer className="py-8 border-t border-border">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-3">
+          <Logo variant="full" size="sm" />
+          <p className="text-xs text-muted-foreground/50 font-medium uppercase tracking-widest">
+            &copy; {new Date().getFullYear()} Evolute &mdash; Seu próximo nível começa aqui.
+          </p>
+        </div>
       </footer>
     </div>
   );

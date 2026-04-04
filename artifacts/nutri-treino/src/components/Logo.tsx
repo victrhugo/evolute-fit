@@ -2,49 +2,34 @@ import { useLocation } from "wouter";
 
 interface LogoProps {
   size?: "sm" | "md";
+  variant?: "icon" | "full";
 }
 
-export default function Logo({ size = "md" }: LogoProps) {
+export default function Logo({ size = "md", variant = "icon" }: LogoProps) {
   const [, setLocation] = useLocation();
 
-  const iconSize = size === "sm" ? 28 : 32;
-  const textSize = size === "sm" ? "text-lg" : "text-xl";
-  const gap = size === "sm" ? "gap-2" : "gap-2.5";
+  const iconHeight = size === "sm" ? "h-8" : "h-9";
+  const fullHeight = size === "sm" ? "h-7" : "h-8";
 
   return (
     <button
       onClick={() => setLocation("/")}
-      className={`flex items-center ${gap} hover:opacity-80 transition-opacity`}
+      className="hover:opacity-80 transition-opacity flex-shrink-0"
       aria-label="Ir para o início"
     >
-      <svg
-        width={iconSize}
-        height={iconSize}
-        viewBox="0 0 40 40"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
-      >
-        <circle cx="20" cy="20" r="20" fill="#22c55e" />
-        <text
-          x="50%"
-          y="50%"
-          dominantBaseline="central"
-          textAnchor="middle"
-          fill="#000000"
-          fontSize="22"
-          fontWeight="700"
-          fontFamily="'Inter', 'Helvetica Neue', Arial, sans-serif"
-          letterSpacing="-0.5"
-        >
-          e
-        </text>
-      </svg>
-      <span
-        className={`${textSize} font-bold tracking-tight text-white leading-none`}
-      >
-        evolute
-      </span>
+      {variant === "full" ? (
+        <img
+          src="/logo-full.png"
+          alt="Evolute"
+          className={`${fullHeight} w-auto object-contain`}
+        />
+      ) : (
+        <img
+          src="/logo-icon.png"
+          alt="Evolute"
+          className={`${iconHeight} w-auto object-contain`}
+        />
+      )}
     </button>
   );
 }
