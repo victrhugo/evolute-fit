@@ -61,6 +61,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     supabase.auth.getSession().then(async ({ data: { session } }) => {
       clearTimeout(timeout);
+      // If user just signed out, ignore any lingering session from Chrome auto-login
+      const justSignedOut = sessionStorage.getItem("signed-out") === "1";
+      if (justSignedOut) {
+        sessionStorage.removeItem("signed-out");
+        if (session) {
+          await supabase.auth.signOut({ scope: "global" });
+        }
+        setIsLoading(false);
+        return;
+      }
       const currentUser = session?.user ?? null;
       setUser(currentUser);
       if (currentUser) {
@@ -76,6 +86,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      // Ignore SIGNED_IN events that fire immediately after a manual sign-out
+      if (event === "SIGNED_IN" && sessionStorage.getItem("signed-out") === "1") {
+        return;
+      }
+
       const currentUser = session?.user ?? null;
       setUser(currentUser);
 
@@ -108,10 +123,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   async function signOut() {
+    // Mark that the user explicitly signed out — blocks Chrome's auto re-login
+    sessionStorage.setItem("signed-out", "1");
     if (supabase) {
-      // Race against a 3-second timeout so the page always navigates
+      // scope: "global" revokes the token server-side, preventing silent re-auth
       await Promise.race([
-        supabase.auth.signOut(),
+        supabase.auth.signOut({ scope: "global" }),
         new Promise((_, reject) => setTimeout(() => reject(new Error("timeout")), 3000)),
       ]).catch(() => {});
     }
