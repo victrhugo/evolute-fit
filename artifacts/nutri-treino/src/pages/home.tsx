@@ -1,22 +1,12 @@
 import { Link, useLocation } from "wouter";
 import { ArrowRight, Zap, Utensils, Dumbbell, TrendingUp, ChevronRight, FileText } from "lucide-react";
-import { useEffect, useState } from "react";
 import AuthButton from "@/components/AuthButton";
-import { useAuth } from "@/hooks/use-auth";
-import { hasSavedPlan } from "@/lib/planStorage";
+import { usePlan } from "@/contexts/plan-context";
 
 export default function Home() {
   const [, setLocation] = useLocation();
-  const { user, isLoading } = useAuth();
-  const [hasExistingPlan, setHasExistingPlan] = useState(false);
-
-  useEffect(() => {
-    async function check() {
-      const exists = await hasSavedPlan(user?.id ?? null);
-      setHasExistingPlan(exists);
-    }
-    if (!isLoading) check();
-  }, [user, isLoading]);
+  const { plan } = usePlan();
+  const hasExistingPlan = !!plan;
 
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground overflow-x-hidden">

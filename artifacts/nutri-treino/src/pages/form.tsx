@@ -6,7 +6,7 @@ import * as z from "zod";
 import { ArrowLeft, ArrowRight, Zap, CheckCircle2, Loader2 } from "lucide-react";
 import AuthButton from "@/components/AuthButton";
 import { useAuth } from "@/hooks/use-auth";
-import { savePlanLocally, savePlanToCloud } from "@/lib/planStorage";
+import { usePlan } from "@/contexts/plan-context";
 
 import {
   Form,
@@ -59,6 +59,7 @@ export default function FormPage() {
   const [step, setStep] = useState(1);
   const [generating, setGenerating] = useState(false);
   const { user } = useAuth();
+  const { setPlanAndSave } = usePlan();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -78,12 +79,11 @@ export default function FormPage() {
     setTimeout(() => {
       try {
         const plan = generatePlan(values as UserData);
-        savePlanLocally(plan);
+        console.log("[Form] generated plan, user.id:", user?.id ?? null);
+        setPlanAndSave(plan, user?.id ?? null);
         setLocation("/plano");
-        if (user?.id) {
-          savePlanToCloud(user.id, plan).catch(() => {});
-        }
-      } catch {
+      } catch (e) {
+        console.error("[Form] plan generation error:", e);
         setGenerating(false);
       }
     }, 1200);

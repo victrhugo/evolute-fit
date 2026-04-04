@@ -12,10 +12,9 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { GeneratedPlan } from "@/lib/planGenerator";
 import Coach from "@/components/Coach";
 import { useAuth } from "@/hooks/use-auth";
-import { loadPlanLocally, loadPlanFromCloud, savePlanLocally, clearLocalPlan, deletePlanFromCloud } from "@/lib/planStorage";
+import { usePlan } from "@/contexts/plan-context";
 
 function MacroBadge({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
   return (
@@ -28,41 +27,24 @@ function MacroBadge({ label, value, unit, color }: { label: string; value: numbe
 
 export default function PlanPage() {
   const [, setLocation] = useLocation();
-  const [plan, setPlan] = useState<GeneratedPlan | null>(null);
   const [showCoach, setShowCoach] = useState(false);
-  const [savedToCloud, setSavedToCloud] = useState(false);
   const [confirmRedo, setConfirmRedo] = useState(false);
   const { isPremium, user } = useAuth();
+  const { plan, isLoadingPlan, clearPlan } = usePlan();
 
   useEffect(() => {
-    // Always load from localStorage immediately — no waiting on network
-    const local = loadPlanLocally();
-    if (!local) {
+    // Redirect to form if plan finished loading and there's nothing to show
+    if (!isLoadingPlan && !plan) {
       setLocation("/formulario");
-      return;
     }
-    setPlan(local);
-
-    // Optionally sync a fresher copy from cloud in background (no spinner)
-    if (user?.id) {
-      let cancelled = false;
-      loadPlanFromCloud(user.id).then((cloud) => {
-        if (cancelled || !cloud) return;
-        setPlan(cloud);
-        savePlanLocally(cloud);
-        setSavedToCloud(true);
-      }).catch(() => {});
-      return () => { cancelled = true; };
-    }
-  }, [user, setLocation]);
+  }, [plan, isLoadingPlan, setLocation]);
 
   async function handleRedo() {
     if (!confirmRedo) {
       setConfirmRedo(true);
       return;
     }
-    if (user) await deletePlanFromCloud(user.id);
-    clearLocalPlan();
+    await clearPlan(user?.id ?? null);
     setLocation("/formulario");
   }
 
@@ -101,7 +83,7 @@ export default function PlanPage() {
             {confirmRedo ? "Confirmar? Clique novamente" : "Refazer plano"}
           </button>
           <div className="flex items-center gap-3">
-            {savedToCloud && (
+            {!!user && (
               <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-emerald-400/80 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
                 <Cloud className="w-3.5 h-3.5" />
                 Plano salvo

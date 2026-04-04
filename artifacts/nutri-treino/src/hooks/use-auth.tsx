@@ -65,7 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const justSignedOut = sessionStorage.getItem("signed-out") === "1";
       if (justSignedOut) {
         sessionStorage.removeItem("signed-out");
-        if (session) {
+        if (session && supabase) {
           await supabase.auth.signOut({ scope: "global" });
         }
         setIsLoading(false);
