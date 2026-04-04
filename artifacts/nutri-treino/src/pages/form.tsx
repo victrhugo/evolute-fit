@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { ArrowLeft, ArrowRight, Zap, CheckCircle2, Loader2 } from "lucide-react";
 import AuthButton from "@/components/AuthButton";
+import Logo from "@/components/Logo";
 import { useAuth } from "@/hooks/use-auth";
 import { usePlan } from "@/contexts/plan-context";
 
@@ -137,12 +138,7 @@ export default function FormPage() {
         </Link>
 
         <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-              <span className="font-extrabold text-xs text-primary-foreground leading-none">E</span>
-            </div>
-            <span className="font-bold text-base">Evolute</span>
-          </div>
+          <Logo size="sm" />
           <AuthButton />
         </div>
 

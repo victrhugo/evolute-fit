@@ -5,6 +5,7 @@ import {
   TrendingUp, AlertTriangle, CheckCircle2, ChevronDown, RotateCcw, Cloud
 } from "lucide-react";
 import AuthButton from "@/components/AuthButton";
+import Logo from "@/components/Logo";
 import { PremiumCTA, PremiumCoachButton } from "@/components/PremiumGate";
 import {
   Accordion,
@@ -89,12 +90,7 @@ export default function PlanPage() {
                 Plano salvo
               </div>
             )}
-            <div className="flex items-center gap-2">
-              <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
-                <span className="font-extrabold text-[10px] text-primary-foreground leading-none">E</span>
-              </div>
-              <span className="font-bold text-sm">Evolute</span>
-            </div>
+            <Logo size="sm" />
             <AuthButton />
           </div>
         </div>

@@ -2,6 +2,7 @@ import { Link, useLocation } from "wouter";
 import { ArrowRight, Zap, Utensils, Dumbbell, TrendingUp, ChevronRight, FileText } from "lucide-react";
 import AuthButton from "@/components/AuthButton";
 import { usePlan } from "@/contexts/plan-context";
+import Logo from "@/components/Logo";
 
 export default function Home() {
   const [, setLocation] = useLocation();
@@ -13,12 +14,7 @@ export default function Home() {
 
       {/* Navbar */}
       <header className="fixed top-0 left-0 right-0 z-50 px-6 lg:px-12 h-16 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="flex items-center gap-2.5">
-          <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
-            <span className="font-extrabold text-sm text-primary-foreground leading-none">E</span>
-          </div>
-          <span className="font-bold text-lg tracking-tight">Evolute</span>
-        </div>
+        <Logo />
         <div className="flex items-center gap-2">
           <AuthButton />
           {hasExistingPlan ? (
