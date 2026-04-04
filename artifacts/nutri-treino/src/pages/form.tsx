@@ -5,6 +5,8 @@ import { useForm } from "react-hook-form";
 import * as z from "zod";
 import { ArrowLeft, ArrowRight, Zap, CheckCircle2, Loader2 } from "lucide-react";
 import AuthButton from "@/components/AuthButton";
+import { useAuth } from "@/hooks/use-auth";
+import { savePlan } from "@/lib/planStorage";
 
 import {
   Form,
@@ -56,6 +58,7 @@ export default function FormPage() {
   const [, setLocation] = useLocation();
   const [step, setStep] = useState(1);
   const [generating, setGenerating] = useState(false);
+  const { user } = useAuth();
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -72,9 +75,9 @@ export default function FormPage() {
 
   function onSubmit(values: FormValues) {
     setGenerating(true);
-    setTimeout(() => {
+    setTimeout(async () => {
       const plan = generatePlan(values as UserData);
-      localStorage.setItem("nutri-treino-plan", JSON.stringify(plan));
+      await savePlan(user?.id ?? null, plan);
       setLocation("/plano");
     }, 1200);
   }

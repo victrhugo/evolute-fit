@@ -1,8 +1,23 @@
-import { Link } from "wouter";
-import { ArrowRight, Zap, Utensils, Dumbbell, TrendingUp, ChevronRight } from "lucide-react";
+import { Link, useLocation } from "wouter";
+import { ArrowRight, Zap, Utensils, Dumbbell, TrendingUp, ChevronRight, FileText } from "lucide-react";
+import { useEffect, useState } from "react";
 import AuthButton from "@/components/AuthButton";
+import { useAuth } from "@/hooks/use-auth";
+import { hasSavedPlan } from "@/lib/planStorage";
 
 export default function Home() {
+  const [, setLocation] = useLocation();
+  const { user, isLoading } = useAuth();
+  const [hasExistingPlan, setHasExistingPlan] = useState(false);
+
+  useEffect(() => {
+    async function check() {
+      const exists = await hasSavedPlan(user?.id ?? null);
+      setHasExistingPlan(exists);
+    }
+    if (!isLoading) check();
+  }, [user, isLoading]);
+
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground overflow-x-hidden">
 
@@ -16,14 +31,25 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-2">
           <AuthButton />
-          <Link href="/formulario">
+          {hasExistingPlan ? (
             <button
-              data-testid="link-start-nav"
-              className="btn-glow text-sm font-semibold bg-primary text-primary-foreground px-5 py-2 rounded-lg"
+              data-testid="link-view-plan-nav"
+              onClick={() => setLocation("/plano")}
+              className="btn-glow text-sm font-semibold bg-primary text-primary-foreground px-5 py-2 rounded-lg flex items-center gap-1.5"
             >
-              Criar meu plano
+              <FileText className="w-4 h-4" />
+              Ver meu plano
             </button>
-          </Link>
+          ) : (
+            <Link href="/formulario">
+              <button
+                data-testid="link-start-nav"
+                className="btn-glow text-sm font-semibold bg-primary text-primary-foreground px-5 py-2 rounded-lg"
+              >
+                Criar meu plano
+              </button>
+            </Link>
+          )}
         </div>
       </header>
 
@@ -50,19 +76,43 @@ export default function Home() {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center pt-4">
-              <Link href="/formulario">
-                <button
-                  data-testid="button-create-plan-hero"
-                  className="btn-glow bg-primary text-primary-foreground font-bold text-base px-8 py-4 rounded-xl flex items-center gap-2 group"
-                >
-                  Criar meu plano grátis
-                  <ArrowRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
-                </button>
-              </Link>
+              {hasExistingPlan ? (
+                <>
+                  <button
+                    data-testid="button-view-plan-hero"
+                    onClick={() => setLocation("/plano")}
+                    className="btn-glow bg-primary text-primary-foreground font-bold text-base px-8 py-4 rounded-xl flex items-center gap-2 group"
+                  >
+                    <FileText className="w-5 h-5" />
+                    Ver meu plano salvo
+                    <ArrowRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
+                  </button>
+                  <Link href="/formulario">
+                    <button
+                      data-testid="button-create-plan-hero"
+                      className="text-sm font-semibold text-muted-foreground hover:text-foreground border border-border hover:border-foreground/20 px-6 py-3 rounded-xl transition-all duration-200"
+                    >
+                      Criar novo plano
+                    </button>
+                  </Link>
+                </>
+              ) : (
+                <Link href="/formulario">
+                  <button
+                    data-testid="button-create-plan-hero"
+                    className="btn-glow bg-primary text-primary-foreground font-bold text-base px-8 py-4 rounded-xl flex items-center gap-2 group"
+                  >
+                    Criar meu plano grátis
+                    <ArrowRight className="w-5 h-5 transition-transform duration-200 group-hover:translate-x-1" />
+                  </button>
+                </Link>
+              )}
             </div>
 
             <p className="text-xs text-muted-foreground/60 font-medium uppercase tracking-wider">
-              Leva menos de 2 minutos &bull; Totalmente gratuito
+              {hasExistingPlan
+                ? "Seu plano está salvo e pronto para usar"
+                : "Leva menos de 2 minutos \u2022 Totalmente gratuito"}
             </p>
           </div>
         </section>

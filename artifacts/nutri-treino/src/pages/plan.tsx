@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useLocation, Link } from "wouter";
 import {
   ArrowLeft, Flame, Utensils, Dumbbell, Zap,
-  TrendingUp, AlertTriangle, CheckCircle2, ChevronDown, RotateCcw
+  TrendingUp, AlertTriangle, CheckCircle2, ChevronDown, RotateCcw, Cloud
 } from "lucide-react";
 import AuthButton from "@/components/AuthButton";
 import { PremiumCTA, PremiumCoachButton } from "@/components/PremiumGate";
@@ -15,6 +15,7 @@ import {
 import { GeneratedPlan } from "@/lib/planGenerator";
 import Coach from "@/components/Coach";
 import { useAuth } from "@/hooks/use-auth";
+import { loadPlan, clearLocalPlan, deletePlanFromCloud } from "@/lib/planStorage";
 
 function MacroBadge({ label, value, unit, color }: { label: string; value: number; unit: string; color: string }) {
   return (
@@ -29,20 +30,35 @@ export default function PlanPage() {
   const [, setLocation] = useLocation();
   const [plan, setPlan] = useState<GeneratedPlan | null>(null);
   const [showCoach, setShowCoach] = useState(false);
-  const { isPremium } = useAuth();
+  const [savedToCloud, setSavedToCloud] = useState(false);
+  const [confirmRedo, setConfirmRedo] = useState(false);
+  const { isPremium, user } = useAuth();
 
   useEffect(() => {
-    const data = localStorage.getItem("nutri-treino-plan");
-    if (!data) {
-      setLocation("/formulario");
-    } else {
-      try {
-        setPlan(JSON.parse(data));
-      } catch {
+    let cancelled = false;
+    async function fetchPlan() {
+      const loaded = await loadPlan(user?.id ?? null);
+      if (cancelled) return;
+      if (!loaded) {
         setLocation("/formulario");
+      } else {
+        setPlan(loaded);
+        setSavedToCloud(!!user);
       }
     }
-  }, [setLocation]);
+    fetchPlan();
+    return () => { cancelled = true; };
+  }, [user, setLocation]);
+
+  async function handleRedo() {
+    if (!confirmRedo) {
+      setConfirmRedo(true);
+      return;
+    }
+    if (user) await deletePlanFromCloud(user.id);
+    clearLocalPlan();
+    setLocation("/formulario");
+  }
 
   if (!plan) {
     return (
@@ -66,13 +82,25 @@ export default function PlanPage() {
       {/* Header */}
       <div className="border-b border-border bg-card/60 backdrop-blur-md sticky top-0 z-40 px-6 py-4">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/formulario">
-            <button data-testid="button-redo-plan-top" className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors text-sm font-medium">
-              <ArrowLeft className="w-4 h-4" />
-              Refazer
-            </button>
-          </Link>
+          <button
+            data-testid="button-redo-plan-top"
+            onClick={handleRedo}
+            className={`flex items-center gap-2 transition-colors text-sm font-medium ${
+              confirmRedo
+                ? "text-red-400 hover:text-red-300"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <RotateCcw className="w-4 h-4" />
+            {confirmRedo ? "Confirmar? Clique novamente" : "Refazer plano"}
+          </button>
           <div className="flex items-center gap-3">
+            {savedToCloud && (
+              <div className="hidden sm:flex items-center gap-1.5 text-xs font-semibold text-emerald-400/80 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-lg">
+                <Cloud className="w-3.5 h-3.5" />
+                Plano salvo
+              </div>
+            )}
             <div className="flex items-center gap-2">
               <div className="w-5 h-5 rounded bg-primary flex items-center justify-center">
                 <span className="font-extrabold text-[10px] text-primary-foreground leading-none">E</span>
@@ -321,15 +349,27 @@ export default function PlanPage() {
         </div>
 
         {/* Redo button */}
-        <div className="flex justify-center pt-4 pb-12">
+        <div className="flex flex-col items-center gap-3 pt-4 pb-12">
           <button
             data-testid="button-redo-plan-bottom"
-            onClick={() => setLocation("/formulario")}
-            className="flex items-center gap-2 text-sm font-semibold text-muted-foreground hover:text-foreground border border-border hover:border-foreground/20 px-6 py-3 rounded-xl transition-all duration-200"
+            onClick={handleRedo}
+            className={`flex items-center gap-2 text-sm font-semibold border px-6 py-3 rounded-xl transition-all duration-200 ${
+              confirmRedo
+                ? "text-red-400 border-red-500/30 hover:border-red-400/40 hover:text-red-300"
+                : "text-muted-foreground hover:text-foreground border-border hover:border-foreground/20"
+            }`}
           >
             <RotateCcw className="w-4 h-4" />
-            Refazer meu plano
+            {confirmRedo ? "Tem certeza? Clique para confirmar" : "Refazer meu plano"}
           </button>
+          {confirmRedo && (
+            <button
+              onClick={() => setConfirmRedo(false)}
+              className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
+            >
+              Cancelar
+            </button>
+          )}
         </div>
       </main>
     </div>
