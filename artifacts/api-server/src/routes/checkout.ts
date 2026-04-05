@@ -27,7 +27,10 @@ router.post("/create-checkout-session", async (req, res) => {
       "http://localhost:24870";
 
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card", "pix"],
+      automatic_payment_methods: {
+        enabled: true,
+        allow_redirects: "always",
+      },
       payment_method_options: {
         pix: {
           expires_after_seconds: 3600,
