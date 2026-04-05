@@ -16,6 +16,6 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.101.1",
-    "stripe": "^21.0.1"
+    "mercadopago": "^2.12.0"
   }
 }

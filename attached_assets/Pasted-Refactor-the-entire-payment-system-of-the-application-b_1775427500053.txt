@@ -1,0 +1,143 @@
+Refactor the entire payment system of the application by completely removing Stripe and implementing Mercado Pago PIX payments from scratch in a clean and structured way.
+
+IMPORTANT CONTEXT:
+- The current project uses Stripe, but it must be fully removed
+- The new system must use Mercado Pago with PIX only
+- The environment variable MERCADO_PAGO_ACCESS_TOKEN is already configured in Replit Secrets
+
+OBJECTIVE:
+Create a clean, reliable and production-ready PIX payment flow using Mercado Pago.
+
+--------------------------------------------------
+
+1. REMOVE STRIPE COMPLETELY
+
+- Delete all Stripe imports and dependencies
+- Remove Stripe API routes
+- Remove any Stripe-related UI components
+- Ensure no Stripe references remain in the project
+
+--------------------------------------------------
+
+2. SETUP MERCADO PAGO SDK
+
+- Install and configure Mercado Pago SDK
+- Use process.env.MERCADO_PAGO_ACCESS_TOKEN
+- Create a reusable payment service file (e.g. services/payment.js)
+
+--------------------------------------------------
+
+3. CREATE PAYMENT ENDPOINT
+
+Create route:
+
+POST /api/create-payment
+
+Functionality:
+- Receive authenticated user (id + email)
+- Create a PIX payment using Mercado Pago
+- Use:
+  - transaction_amount
+  - description ("Evolute Premium")
+  - payment_method_id: "pix"
+  - payer email
+
+Return:
+
+- qr_code_base64
+- pix_code (copy-paste)
+- payment_id
+- status
+
+--------------------------------------------------
+
+4. DATABASE INTEGRATION
+
+Create table "payments":
+
+Fields:
+- id
+- user_id
+- payment_id (Mercado Pago)
+- status
+- created_at
+
+Behavior:
+- Save every new payment
+- Associate with logged user
+
+--------------------------------------------------
+
+5. FRONTEND FLOW
+
+When user clicks "Upgrade to Premium":
+
+- Call /api/create-payment
+- Display:
+
+  - QR Code image
+  - PIX copy-paste code
+  - Message: "Aguardando pagamento..."
+
+- Add copy button for PIX code
+
+--------------------------------------------------
+
+6. WEBHOOK IMPLEMENTATION (CRITICAL)
+
+Create route:
+
+POST /api/webhook
+
+Behavior:
+
+- Receive Mercado Pago notification
+- Fetch payment details using payment_id
+- If status == "approved":
+
+  - Find user (via email or external reference)
+  - Update:
+    is_premium = true
+
+- Update payment status in database
+
+--------------------------------------------------
+
+7. SECURITY RULES
+
+- NEVER trust frontend for payment confirmation
+- ONLY activate premium via webhook
+- Validate payment with Mercado Pago API before updating user
+
+--------------------------------------------------
+
+8. USER EXPERIENCE
+
+- Show loading while generating payment
+- Show real-time status (polling optional)
+- Show success message when payment confirmed
+
+--------------------------------------------------
+
+9. CODE QUALITY
+
+- Organize code into:
+  - services/payment.js
+  - routes/api
+  - frontend components
+
+- Keep code clean and maintainable
+- Avoid duplication
+
+--------------------------------------------------
+
+EXPECTED RESULT:
+
+- Stripe completely removed
+- PIX payment working inside the app
+- QR code + copy-paste working
+- Payment confirmation automatic
+- Premium access unlocked instantly
+- Clean and scalable architecture
+
+--------------------------------------------------

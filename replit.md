@@ -56,7 +56,8 @@ Express 5 API server. Routes live in `src/routes/` and use `@workspace/api-zod` 
 
 - Entry: `src/index.ts` — reads `PORT`, starts Express
 - App setup: `src/app.ts` — mounts CORS, JSON/urlencoded parsing, routes at `/api`
-- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /healthz`; `src/routes/chat.ts` exposes `POST /api/chat` (SSE streaming AI chat)
+- Routes: `src/routes/index.ts` mounts sub-routers; `src/routes/health.ts` exposes `GET /healthz`; `src/routes/chat.ts` exposes `POST /api/chat` (SSE streaming AI chat); `src/routes/payment.ts` exposes `POST /api/create-payment`, `GET /api/payment-status/:id`, `POST /api/webhook` (Mercado Pago PIX)
+- Payment: Mercado Pago PIX via `mercadopago` SDK. Env var: `MERCADO_PAGO_ACCESS_TOKEN`. Premium activation only via webhook (never trust frontend).
 - Depends on: `@workspace/db`, `@workspace/api-zod`, `@workspace/integrations-openai-ai-server`
 - AI: Uses Replit AI Integrations (OpenAI gpt-5.2) via `lib/integrations-openai-ai-server`. Env vars `AI_INTEGRATIONS_OPENAI_BASE_URL` and `AI_INTEGRATIONS_OPENAI_API_KEY` are auto-provisioned.
 - `pnpm --filter @workspace/api-server run dev` — run the dev server

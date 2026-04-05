@@ -27,6 +27,30 @@ BEGIN
       WITH CHECK (auth.uid() = user_id);
   END IF;
 END $$;
+
+CREATE TABLE IF NOT EXISTS payments (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  payment_id TEXT NOT NULL UNIQUE,
+  status TEXT NOT NULL DEFAULT 'pending',
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE payments ENABLE ROW LEVEL SECURITY;
+
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public'
+      AND tablename = 'payments'
+      AND policyname = 'Users can view own payments'
+  ) THEN
+    CREATE POLICY "Users can view own payments"
+      ON payments FOR SELECT
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 `.trim();
 
 router.post("/migrate", async (req, res) => {
@@ -43,7 +67,6 @@ router.post("/migrate", async (req, res) => {
     return;
   }
 
-  // Extract project ref from URL: https://{ref}.supabase.co
   const match = supabaseUrl.match(/https:\/\/([^.]+)\.supabase\.co/);
   if (!match) {
     res.status(500).json({
@@ -56,7 +79,6 @@ router.post("/migrate", async (req, res) => {
 
   const projectRef = match[1];
 
-  // 1. Try Supabase Management API (requires management token, not service key — expected to fail)
   try {
     const mgmtRes = await fetch(
       `https://api.supabase.com/v1/projects/${projectRef}/database/query`,
@@ -78,28 +100,31 @@ router.post("/migrate", async (req, res) => {
     // fall through
   }
 
-  // 2. Try verifying the table already exists by checking via Supabase client
   try {
     const supabase = createClient(supabaseUrl, serviceKey, {
       auth: { persistSession: false },
     });
 
-    const { error } = await supabase
+    const { error: plansError } = await supabase
       .from("plans")
       .select("id")
       .limit(1);
 
-    if (!error) {
-      res.json({ success: true, method: "table-exists" });
+    const { error: paymentsError } = await supabase
+      .from("payments")
+      .select("id")
+      .limit(1);
+
+    if (!plansError && !paymentsError) {
+      res.json({ success: true, method: "tables-exist" });
       return;
     }
 
-    // Table doesn't exist — return SQL for manual creation
     res.status(200).json({
       success: false,
       method: "manual-required",
       message:
-        "Run the following SQL in your Supabase SQL Editor to enable plan persistence:",
+        "Run the following SQL in your Supabase SQL Editor to enable plan and payment persistence:",
       sql: MIGRATION_SQL,
     });
   } catch (err) {

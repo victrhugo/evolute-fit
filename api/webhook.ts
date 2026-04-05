@@ -1,66 +1,75 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import Stripe from "stripe";
+import { MercadoPagoConfig, Payment } from "mercadopago";
 import { createClient } from "@supabase/supabase-js";
-
-export const config = {
-  api: { bodyParser: false },
-};
-
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-  apiVersion: "2025-03-31.basil",
-});
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
-
-async function getRawBody(req: VercelRequest): Promise<Buffer> {
-  return new Promise((resolve, reject) => {
-    const chunks: Buffer[] = [];
-    req.on("data", (chunk: Buffer) => chunks.push(chunk));
-    req.on("end", () => resolve(Buffer.concat(chunks)));
-    req.on("error", reject);
-  });
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
-  const sig = req.headers["stripe-signature"] as string;
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
-  const rawBody = await getRawBody(req);
+  const body = req.body as { action?: string; data?: { id?: string } };
 
-  let event: Stripe.Event;
+  if (
+    body.action !== "payment.updated" &&
+    body.action !== "payment.created"
+  ) {
+    return res.status(200).json({ received: true });
+  }
+
+  const paymentId = body.data?.id;
+  if (!paymentId) {
+    return res.status(200).json({ received: true });
+  }
+
+  const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
+  if (!accessToken) {
+    return res.status(500).json({ error: "MERCADO_PAGO_ACCESS_TOKEN not configured" });
+  }
 
   try {
-    if (webhookSecret) {
-      event = stripe.webhooks.constructEvent(rawBody, sig, webhookSecret);
-    } else {
-      event = JSON.parse(rawBody.toString()) as Stripe.Event;
-    }
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Webhook error";
-    return res.status(400).send(`Webhook Error: ${message}`);
-  }
+    const client = new MercadoPagoConfig({ accessToken });
+    const paymentClient = new Payment(client);
+    const payment = await paymentClient.get({ id: paymentId });
 
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const email = session.customer_email;
+    if (payment.status === "approved") {
+      const userId = payment.external_reference;
+      const payerEmail = payment.payer?.email;
 
-    if (email) {
-      const { error } = await supabase
-        .from("users")
-        .update({ is_premium: true })
-        .eq("email", email);
+      const serviceKey =
+        process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY;
+      if (!serviceKey) {
+        return res.status(500).json({ error: "Supabase key not configured" });
+      }
 
-      if (error) {
-        console.error("Supabase update error:", error.message);
+      const supabase = createClient(process.env.SUPABASE_URL!, serviceKey);
+
+      if (userId) {
+        const { error } = await supabase
+          .from("users")
+          .update({ is_premium: true })
+          .eq("id", userId);
+        if (error) console.error("Supabase update by userId error:", error.message);
+      } else if (payerEmail) {
+        const { error } = await supabase
+          .from("users")
+          .update({ is_premium: true })
+          .eq("email", payerEmail);
+        if (error) console.error("Supabase update by email error:", error.message);
+      }
+
+      const { error: paymentUpdateError } = await supabase
+        .from("payments")
+        .update({ status: "approved" })
+        .eq("payment_id", paymentId);
+      if (paymentUpdateError) {
+        console.error("Payment DB update error:", paymentUpdateError.message);
       }
     }
-  }
 
-  return res.status(200).json({ received: true });
+    return res.status(200).json({ received: true });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Webhook error";
+    console.error("Webhook error:", message);
+    return res.status(500).json({ error: message });
+  }
 }
