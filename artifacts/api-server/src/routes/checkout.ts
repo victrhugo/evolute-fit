@@ -17,51 +17,6 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL!, key);
 }
 
-async function markUserPremium(userId?: string | null, email?: string | null) {
-  if (!userId && !email) return;
-  const supabase = getSupabase();
-  if (userId) {
-    const { error } = await supabase
-      .from("users")
-      .update({ is_premium: true })
-      .eq("id", userId);
-    if (error) console.error("Supabase update by userId error:", error.message);
-  } else if (email) {
-    const { error } = await supabase
-      .from("users")
-      .update({ is_premium: true })
-      .eq("email", email);
-    if (error) console.error("Supabase update by email error:", error.message);
-  }
-}
-
-// ── Payment Element flow ─────────────────────────────────────────────────────
-
-router.post("/create-payment-intent", async (req, res) => {
-  try {
-    const stripe = getStripe();
-    const { email, userId } = req.body as { email?: string; userId?: string };
-
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: 1490,
-      currency: "brl",
-      automatic_payment_methods: { enabled: true },
-      metadata: {
-        ...(userId ? { userId } : {}),
-        ...(email ? { email } : {}),
-      },
-      ...(email ? { receipt_email: email } : {}),
-    });
-
-    res.json({ clientSecret: paymentIntent.client_secret });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Erro desconhecido";
-    res.status(500).json({ error: message });
-  }
-});
-
-// ── Legacy Checkout Session flow (kept for backwards compat) ─────────────────
-
 router.post("/create-checkout-session", async (req, res) => {
   try {
     const stripe = getStripe();
@@ -77,7 +32,9 @@ router.post("/create-checkout-session", async (req, res) => {
         allow_redirects: "always",
       },
       payment_method_options: {
-        pix: { expires_after_seconds: 3600 },
+        pix: {
+          expires_after_seconds: 3600,
+        },
       },
       line_items: [
         {
@@ -85,7 +42,8 @@ router.post("/create-checkout-session", async (req, res) => {
             currency: "brl",
             product_data: {
               name: "Evolute Premium",
-              description: "Acesso completo: plano detalhado + Coach IA personalizado",
+              description:
+                "Acesso completo: plano detalhado + Coach IA personalizado",
             },
             unit_amount: 1490,
           },
@@ -106,8 +64,6 @@ router.post("/create-checkout-session", async (req, res) => {
   }
 });
 
-// ── Webhook ──────────────────────────────────────────────────────────────────
-
 router.post("/webhook", async (req, res) => {
   const stripe = getStripe();
   const sig = req.headers["stripe-signature"] as string;
@@ -126,18 +82,36 @@ router.post("/webhook", async (req, res) => {
     return res.status(400).send(`Webhook Error: ${message}`);
   }
 
-  try {
-    if (event.type === "payment_intent.succeeded") {
-      const pi = event.data.object as Stripe.PaymentIntent;
-      await markUserPremium(pi.metadata?.userId, pi.metadata?.email ?? pi.receipt_email);
-    }
+  if (event.type === "checkout.session.completed") {
+    const session = event.data.object as Stripe.Checkout.Session;
+    const userId = session.client_reference_id;
+    const email = session.customer_email;
 
-    if (event.type === "checkout.session.completed") {
-      const session = event.data.object as Stripe.Checkout.Session;
-      await markUserPremium(session.client_reference_id, session.customer_email);
+    try {
+      const supabase = getSupabase();
+
+      if (userId) {
+        const { error } = await supabase
+          .from("users")
+          .update({ is_premium: true })
+          .eq("id", userId);
+
+        if (error) {
+          console.error("Supabase update by userId error:", error.message);
+        }
+      } else if (email) {
+        const { error } = await supabase
+          .from("users")
+          .update({ is_premium: true })
+          .eq("email", email);
+
+        if (error) {
+          console.error("Supabase update by email error:", error.message);
+        }
+      }
+    } catch (e) {
+      console.error("Failed to update premium status:", e);
     }
-  } catch (e) {
-    console.error("Failed to update premium status:", e);
   }
 
   res.json({ received: true });
