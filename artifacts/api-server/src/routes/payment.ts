@@ -19,10 +19,21 @@ function getSupabase() {
 
 router.post("/create-payment", async (req, res) => {
   try {
-    const { email, userId } = req.body as { email?: string; userId?: string };
+    const { email, userId, firstName, lastName, cpf } = req.body as {
+      email?: string;
+      userId?: string;
+      firstName?: string;
+      lastName?: string;
+      cpf?: string;
+    };
 
     if (!email || !userId) {
       res.status(400).json({ error: "email e userId são obrigatórios" });
+      return;
+    }
+
+    if (!cpf) {
+      res.status(400).json({ error: "CPF é obrigatório para pagamento PIX" });
       return;
     }
 
@@ -34,7 +45,15 @@ router.post("/create-payment", async (req, res) => {
         transaction_amount: 14.9,
         description: "Evolute Premium",
         payment_method_id: "pix",
-        payer: { email },
+        payer: {
+          email,
+          first_name: firstName || "Cliente",
+          last_name: lastName || "Evolute",
+          identification: {
+            type: "CPF",
+            number: cpf.replace(/\D/g, ""),
+          },
+        },
         external_reference: userId,
       },
       requestOptions: { idempotencyKey: `${userId}-${Date.now()}` },
@@ -66,7 +85,9 @@ router.post("/create-payment", async (req, res) => {
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erro desconhecido";
-    res.status(500).json({ error: message });
+    const cause = (err as Record<string, unknown>)?.cause;
+    console.error("create-payment error:", JSON.stringify({ message, cause, err }, null, 2));
+    res.status(500).json({ error: message, details: cause });
   }
 });
 
