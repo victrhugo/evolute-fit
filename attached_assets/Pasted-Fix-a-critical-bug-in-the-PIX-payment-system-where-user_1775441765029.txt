@@ -1,0 +1,94 @@
+Fix a critical bug in the PIX payment system where users complete payment but are not upgraded to premium.
+
+PROBLEM:
+
+- User completes PIX payment successfully
+- UI remains stuck at "Aguardando pagamento"
+- Database field is_premium is NOT updated to true
+- Example: user email exists but is not updated
+
+OBJECTIVE:
+
+Ensure that every successful payment correctly updates the user to premium.
+
+--------------------------------------------------
+
+1. FIX WEBHOOK HANDLING (CRITICAL)
+
+- Ensure webhook endpoint is correctly receiving Mercado Pago events
+
+- On receiving notification:
+  - Extract payment_id
+  - Call Mercado Pago API to fetch payment details
+
+- Validate:
+  if payment.status === "approved"
+
+--------------------------------------------------
+
+2. ENSURE USER MATCHING
+
+- Retrieve payer email from Mercado Pago response:
+  payment.payer.email
+
+- Find user in database:
+
+  WHERE email = payer.email
+
+- IMPORTANT:
+  - Normalize email (lowercase, trim spaces)
+  - Ensure exact match
+
+--------------------------------------------------
+
+3. UPDATE DATABASE
+
+- If payment is approved:
+
+  UPDATE users
+  SET is_premium = true
+  WHERE email = payer.email
+
+- Also update payments table status = "approved"
+
+--------------------------------------------------
+
+4. ADD LOGGING (VERY IMPORTANT)
+
+Add logs:
+
+- When webhook is triggered
+- Payment ID received
+- Payment status
+- Email found
+- Whether user was updated
+
+--------------------------------------------------
+
+5. ADD FALLBACK (POLLING FIX)
+
+- Create endpoint:
+
+  GET /api/check-premium?email=...
+
+- Frontend polls every 3 seconds
+
+- If user.is_premium === true:
+  - Close modal
+  - Show success
+
+--------------------------------------------------
+
+6. HANDLE EDGE CASES
+
+- If email is null → log error
+- If user not found → log error
+- If status != approved → ignore
+
+--------------------------------------------------
+
+EXPECTED RESULT:
+
+- Every successful payment updates user to premium
+- No more "stuck waiting"
+- System becomes reliable and production-ready

@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { createPortal } from "react-dom";
 import { Lock, Zap, Loader2, Crown, Copy, Check, X, ArrowRight, Rocket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
@@ -282,6 +282,7 @@ function PaymentModal({
             <PixDisplay
               paymentData={paymentData}
               userId={user?.id ?? ""}
+              userEmail={user?.email ?? ""}
               onClose={onClose}
             />
           )
@@ -296,44 +297,76 @@ function PaymentModal({
 function PixDisplay({
   paymentData,
   userId,
+  userEmail,
   onClose,
 }: {
   paymentData: PaymentData;
   userId: string;
+  userEmail: string;
   onClose: () => void;
 }) {
   const { refreshPremium } = useAuth();
   const [copied, setCopied] = useState(false);
   const [pollState, setPollState] = useState<"waiting" | "checking" | "approved">("waiting");
+  const isApproved = useRef(false);
 
-  const checkStatus = useCallback(async () => {
-    setPollState("checking");
+  // Mark approved and refresh auth state
+  const handleApproved = useCallback(async () => {
+    if (isApproved.current) return;
+    isApproved.current = true;
+    setPollState("approved");
+    await refreshPremium();
+  }, [refreshPremium]);
+
+  // Poll 1: MP API (also updates DB as fallback if approved)
+  const checkMpStatus = useCallback(async () => {
+    if (isApproved.current) return;
     try {
       const res = await fetch(`/api/payment-status/${paymentData.payment_id}`);
-      const data = (await res.json()) as { status: string };
-
-      if (data.status === "approved") {
-        setPollState("approved");
-        await refreshPremium();
-        return true;
-      }
+      const data = (await res.json()) as { status?: string };
+      if (data.status === "approved") await handleApproved();
     } catch {
       // silent — will retry
     }
-    setPollState("waiting");
-    return false;
-  }, [paymentData.payment_id, refreshPremium]);
+  }, [paymentData.payment_id, handleApproved]);
+
+  // Poll 2: DB directly (catches webhook activations immediately)
+  const checkDbPremium = useCallback(async () => {
+    if (isApproved.current || !userEmail) return;
+    try {
+      const res = await fetch(
+        `/api/check-premium?email=${encodeURIComponent(userEmail)}`
+      );
+      const data = (await res.json()) as { is_premium?: boolean };
+      if (data.is_premium) await handleApproved();
+    } catch {
+      // silent — will retry
+    }
+  }, [userEmail, handleApproved]);
 
   useEffect(() => {
-    if (pollState === "approved") return;
+    // Run immediately on mount
+    void checkMpStatus();
+    void checkDbPremium();
 
-    const interval = setInterval(async () => {
-      const done = await checkStatus();
-      if (done) clearInterval(interval);
-    }, 4000);
+    // MP poll every 5s, DB poll every 3s
+    const mpPoll = setInterval(checkMpStatus, 5000);
+    const dbPoll = setInterval(checkDbPremium, 3000);
 
-    return () => clearInterval(interval);
-  }, [pollState, checkStatus]);
+    // Visual pulse between "waiting" / "checking"
+    const pulse = setInterval(() => {
+      if (!isApproved.current) {
+        setPollState((s) => (s === "approved" ? "approved" : s === "waiting" ? "checking" : "waiting"));
+      }
+    }, 3000);
+
+    return () => {
+      clearInterval(mpPoll);
+      clearInterval(dbPoll);
+      clearInterval(pulse);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function handleCopy() {
     try {
