@@ -5,8 +5,10 @@
   "functions": {
     "api/chat.ts": { "maxDuration": 30 },
     "api/healthz.ts": { "maxDuration": 5 },
-    "api/create-payment.ts": { "maxDuration": 10 },
-    "api/webhook.ts": { "maxDuration": 10 }
+    "api/create-payment.ts": { "maxDuration": 15 },
+    "api/webhook.ts": { "maxDuration": 15 },
+    "api/payment-status/[id].ts": { "maxDuration": 15 },
+    "api/check-premium.ts": { "maxDuration": 10 }
   },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }
