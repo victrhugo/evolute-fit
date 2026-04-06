@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { Lock, Zap, Loader2, Crown, Copy, Check, X, ArrowRight } from "lucide-react";
+import { createPortal } from "react-dom";
+import { Lock, Zap, Loader2, Crown, Copy, Check, X, ArrowRight, Rocket } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
 interface PremiumGateProps {
@@ -65,7 +66,7 @@ export function PremiumGate({
           <div className="opacity-25 blur-[3px] pointer-events-none select-none">
             {locked}
           </div>
-          <div className="absolute inset-0 flex flex-col items-center justify-center z-10">
+          <div className="absolute inset-0 flex flex-col items-center justify-center" style={{ zIndex: 10 }}>
             <PremiumCTA label={label} />
           </div>
         </div>
@@ -131,6 +132,15 @@ function PaymentModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  // Lock body scroll when modal is open
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, []);
+
   async function handleGeneratePix() {
     setError("");
     if (!payer.firstName.trim()) {
@@ -169,9 +179,10 @@ function PaymentModal({
     }
   }
 
-  return (
+  const modal = (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm"
+      style={{ zIndex: 9999 }}
+      className="fixed inset-0 flex items-center justify-center p-4 bg-black/75 backdrop-blur-sm"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -270,6 +281,7 @@ function PaymentModal({
           paymentData && (
             <PixDisplay
               paymentData={paymentData}
+              userId={user?.id ?? ""}
               onClose={onClose}
             />
           )
@@ -277,39 +289,51 @@ function PaymentModal({
       </div>
     </div>
   );
+
+  return createPortal(modal, document.body);
 }
 
 function PixDisplay({
   paymentData,
+  userId,
   onClose,
 }: {
   paymentData: PaymentData;
+  userId: string;
   onClose: () => void;
 }) {
   const { refreshPremium } = useAuth();
   const [copied, setCopied] = useState(false);
-  const [status, setStatus] = useState(paymentData.status);
-  const [approved, setApproved] = useState(false);
+  const [pollState, setPollState] = useState<"waiting" | "checking" | "approved">("waiting");
 
   const checkStatus = useCallback(async () => {
+    setPollState("checking");
     try {
       const res = await fetch(`/api/payment-status/${paymentData.payment_id}`);
       const data = (await res.json()) as { status: string };
-      setStatus(data.status);
+
       if (data.status === "approved") {
-        setApproved(true);
+        setPollState("approved");
         await refreshPremium();
+        return true;
       }
     } catch {
       // silent — will retry
     }
+    setPollState("waiting");
+    return false;
   }, [paymentData.payment_id, refreshPremium]);
 
   useEffect(() => {
-    if (approved) return;
-    const interval = setInterval(checkStatus, 4000);
+    if (pollState === "approved") return;
+
+    const interval = setInterval(async () => {
+      const done = await checkStatus();
+      if (done) clearInterval(interval);
+    }, 4000);
+
     return () => clearInterval(interval);
-  }, [approved, checkStatus]);
+  }, [pollState, checkStatus]);
 
   async function handleCopy() {
     try {
@@ -321,18 +345,21 @@ function PixDisplay({
     }
   }
 
-  if (approved) {
+  if (pollState === "approved") {
     return (
-      <div className="flex flex-col items-center gap-4 py-4 text-center">
-        <div className="w-16 h-16 rounded-full bg-green-500/15 border border-green-500/30 flex items-center justify-center">
-          <Check className="w-8 h-8 text-green-500" />
+      <div className="flex flex-col items-center gap-5 py-4 text-center">
+        <div className="relative">
+          <div className="absolute -inset-3 bg-green-500/20 rounded-full blur-xl animate-pulse" />
+          <div className="relative w-20 h-20 rounded-full bg-green-500/15 border border-green-500/30 flex items-center justify-center">
+            <Rocket className="w-9 h-9 text-green-400" />
+          </div>
         </div>
         <div>
-          <h3 className="font-black text-xl tracking-tight text-green-500">
-            Pagamento confirmado!
+          <h3 className="font-black text-2xl tracking-tight text-green-400">
+            Acesso liberado!
           </h3>
-          <p className="text-muted-foreground text-sm mt-1">
-            Seu acesso premium foi liberado. Aproveite!
+          <p className="text-muted-foreground text-sm mt-2 leading-relaxed">
+            Bem-vindo ao Evolute Premium.<br />Seu plano completo já está disponível.
           </p>
         </div>
         <button
@@ -392,14 +419,14 @@ function PixDisplay({
       <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
         <Loader2 className="w-4 h-4 animate-spin text-primary" />
         <span>
-          {status === "pending"
-            ? "Aguardando pagamento..."
-            : `Status: ${status}`}
+          {pollState === "checking"
+            ? "Verificando pagamento..."
+            : "Aguardando pagamento..."}
         </span>
       </div>
 
       <p className="text-xs text-muted-foreground text-center">
-        Após o pagamento, o acesso é liberado automaticamente.
+        O acesso é liberado automaticamente após o pagamento.
       </p>
     </>
   );

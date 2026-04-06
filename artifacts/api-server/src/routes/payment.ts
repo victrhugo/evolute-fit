@@ -99,6 +99,35 @@ router.get("/payment-status/:id", async (req, res) => {
 
     const result = await paymentClient.get({ id });
 
+    // Fallback: if payment is approved, update DB immediately
+    // This ensures premium is activated even if the webhook was missed
+    if (result.status === "approved") {
+      try {
+        const supabase = getSupabase();
+        const userId = result.external_reference;
+        const payerEmail = result.payer?.email;
+
+        if (userId) {
+          await supabase
+            .from("users")
+            .update({ is_premium: true })
+            .eq("id", userId);
+        } else if (payerEmail) {
+          await supabase
+            .from("users")
+            .update({ is_premium: true })
+            .eq("email", payerEmail);
+        }
+
+        await supabase
+          .from("payments")
+          .update({ status: "approved" })
+          .eq("payment_id", String(id));
+      } catch (dbErr) {
+        console.error("Fallback DB update error:", dbErr);
+      }
+    }
+
     res.json({ status: result.status, payment_id: result.id });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erro desconhecido";
