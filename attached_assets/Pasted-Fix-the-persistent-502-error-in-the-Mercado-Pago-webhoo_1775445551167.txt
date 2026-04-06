@@ -1,0 +1,100 @@
+Fix the persistent 502 error in the Mercado Pago webhook on Vercel by making the handler fully safe, non-blocking, and resilient.
+
+CRITICAL CONTEXT:
+
+- Webhook is being triggered
+- Mercado Pago receives 502 error
+- Payment events are not processed
+- This is a serverless (Vercel) environment
+
+--------------------------------------------------
+
+1. ABSOLUTE RULE: RESPOND FIRST
+
+The webhook MUST respond immediately BEFORE any processing.
+
+--------------------------------------------------
+
+2. FINAL SAFE IMPLEMENTATION
+
+export default async function handler(req, res) {
+  // Always allow POST only
+  if (req.method !== "POST") {
+    return res.status(200).json({ ok: true });
+  }
+
+  // Respond IMMEDIATELY to avoid timeout
+  res.status(200).json({ received: true });
+
+  try {
+    console.log("Webhook received");
+
+    const body = req.body;
+
+    if (!body?.data?.id) {
+      console.log("Invalid payload:", body);
+      return;
+    }
+
+    const paymentId = body.data.id;
+
+    console.log("Payment ID:", paymentId);
+
+    // IMPORTANT: wrap EVERYTHING in try/catch
+    try {
+      const payment = await mercadopago.payment.findById(paymentId);
+
+      const status = payment?.body?.status;
+      const email = payment?.body?.payer?.email?.toLowerCase()?.trim();
+
+      console.log("Status:", status);
+      console.log("Email:", email);
+
+      if (status !== "approved" || !email) {
+        console.log("Not approved or missing email");
+        return;
+      }
+
+      await supabase
+        .from("users")
+        .update({ is_premium: true })
+        .eq("email", email);
+
+      console.log("User upgraded:", email);
+
+    } catch (innerError) {
+      console.error("Processing error:", innerError);
+    }
+
+  } catch (error) {
+    console.error("Webhook fatal error:", error);
+  }
+}
+
+--------------------------------------------------
+
+3. CRITICAL FIXES INCLUDED
+
+- Responds immediately (prevents timeout)
+- Uses optional chaining (prevents crashes)
+- Wraps ALL async code in try/catch
+- Prevents undefined access errors
+- Avoids blocking execution
+
+--------------------------------------------------
+
+4. DO NOT:
+
+- Do NOT await before sending response
+- Do NOT throw errors
+- Do NOT depend on frontend
+- Do NOT return anything other than 200
+
+--------------------------------------------------
+
+EXPECTED RESULT:
+
+- 502 error completely eliminated
+- Mercado Pago shows successful delivery
+- Webhook logs appear correctly
+- User is upgraded to premium
