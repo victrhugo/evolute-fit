@@ -8,7 +8,8 @@
     "api/create-payment.ts": { "maxDuration": 15 },
     "api/webhook.ts": { "maxDuration": 15 },
     "api/payment-status/[id].ts": { "maxDuration": 15 },
-    "api/check-premium.ts": { "maxDuration": 10 }
+    "api/check-premium.ts": { "maxDuration": 10 },
+    "api/activate-premium.ts": { "maxDuration": 15 }
   },
   "rewrites": [
     { "source": "/((?!api/).*)", "destination": "/index.html" }

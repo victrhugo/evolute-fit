@@ -310,13 +310,36 @@ function PixDisplay({
   const [pollState, setPollState] = useState<"waiting" | "checking" | "approved">("waiting");
   const isApproved = useRef(false);
 
-  // Mark approved and refresh auth state
+  // Called when MP confirms payment is approved.
+  // 1. Calls /api/activate-premium to guarantee DB is updated (service role key, bypasses RLS)
+  // 2. Retries refreshPremium up to 5x so the UI reflects the real DB state
   const handleApproved = useCallback(async () => {
     if (isApproved.current) return;
     isApproved.current = true;
     setPollState("approved");
-    await refreshPremium();
-  }, [refreshPremium]);
+
+    // Ask server to verify payment with MP and update DB atomically
+    try {
+      await fetch("/api/activate-premium", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          paymentId: String(paymentData.payment_id),
+          userId,
+          email: userEmail,
+        }),
+      });
+    } catch {
+      // Log but continue — webhook may have already activated
+    }
+
+    // Retry refreshPremium up to 5 times (1s apart) until DB confirms is_premium=true
+    for (let i = 0; i < 5; i++) {
+      await refreshPremium();
+      // Small delay before next retry
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+  }, [paymentData.payment_id, userId, userEmail, refreshPremium]);
 
   // Poll 1: MP API (also updates DB as fallback if approved)
   const checkMpStatus = useCallback(async () => {
